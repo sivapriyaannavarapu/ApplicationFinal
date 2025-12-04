@@ -311,25 +311,7 @@ public interface AppStatusTrackRepository extends JpaRepository<AppStatusTrack, 
 	@Query("SELECT COALESCE(SUM(ast.appAvailable), 0) "
 	    + "FROM AppStatusTrack ast "
 	    + "WHERE ast.issuedByType.appIssuedId = 4") // <--- Only filtering by Issued Type
-	Long getWithProAvailableAllTime();
-	
-//	@Query("SELECT a.totalApp, a.appConfirmed, a.appIssued, a.appDamaged " +
-//	           "FROM AppStatusTrack a WHERE a.campus.id = :campusId AND a.academicYear.id = :yearId")
-//	    // Note: Assuming one record per campus per year. If multiple, use SUM().
-//	    Object[] getMetricsByCampusIdAndYear(@Param("campusId") Integer campusId, @Param("yearId") Integer yearId);
-//
-//	    @Query("SELECT DISTINCT a.academicYear.id FROM AppStatusTrack a WHERE a.campus.id = :campusId")
-//	    List<Integer> findDistinctYearIdsByCampusId(@Param("campusId") Integer campusId);
-
-
-	    // --- FOR ZONAL ACCOUNTANT (Direct Zone ID) ---
-//	    @Query("SELECT SUM(a.totalApp), SUM(a.appConfirmed), SUM(a.appIssued), SUM(a.appDamaged) " +
-//	           "FROM AppStatusTrack a WHERE a.zone.id = :zoneId AND a.academicYear.id = :yearId")
-//	    Object[] getMetricsByZoneIdAndYear(@Param("zoneId") Integer zoneId, @Param("yearId") Integer yearId);
-//
-//	    @Query("SELECT DISTINCT a.academicYear.id FROM AppStatusTrack a WHERE a.zone.id = :zoneId")
-//	    List<Integer> findDistinctYearIdsByZoneId(@Param("zoneId") Integer zoneId);
-//	    
+	Long getWithProAvailableAllTime();	    
 	    
 	    @Query("SELECT NEW com.application.dto.MetricsAggregateDTO(" +
 	            "COALESCE(SUM(a.totalApp), 0), COALESCE(SUM(a.appSold), 0), COALESCE(SUM(a.appConfirmed), 0), " +
@@ -361,12 +343,6 @@ public interface AppStatusTrackRepository extends JpaRepository<AppStatusTrack, 
 	     @Query("SELECT DISTINCT a.academicYear.id FROM AppStatusTrack a WHERE a.zone.id = :zoneId")
 	     List<Integer> findDistinctYearIdsByZoneId(@Param("zoneId") Integer zoneId);
 	     
-	  // -------------------------------------------------------------------------
-	     //  WITH PRO METRIC (From AppStatusTrack)
-	     //  Filter: issuedByType.appIssuedId = 4
-	     // -------------------------------------------------------------------------
-
-	     // For ZONE
 	     @Query("SELECT COALESCE(SUM(a.appAvailable), 0) " + 
 	            "FROM AppStatusTrack a " +
 	            "WHERE a.zone.id = :zoneId " +
