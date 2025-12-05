@@ -101,10 +101,10 @@ public interface UserAppSoldRepository extends JpaRepository<UserAppSold, Long> 
 
     // --- Methods to find distinct years for GRAPH ---
 
-    @Query("SELECT DISTINCT uas.acdcYearId FROM UserAppSold uas WHERE uas.zone.id = :zoneId")
+    @Query("SELECT DISTINCT uas.acdcYearId FROM UserAppSold uas WHERE uas.entityId = 2 AND uas.zone.id = :zoneId")
     List<Integer> findDistinctYearIdsByZone(@Param("zoneId") Integer zoneId);
 
-    @Query("SELECT DISTINCT uas.acdcYearId FROM UserAppSold uas WHERE AND uas.empId = :dgmId")
+    @Query("SELECT DISTINCT uas.acdcYearId FROM UserAppSold uas WHERE uas.entityId = 3 AND uas.empId = :dgmId")
     List<Integer> findDistinctYearIdsByDgm(@Param("dgmId") Integer dgmId);
 
     // This method is for a single campus (PRO role)
