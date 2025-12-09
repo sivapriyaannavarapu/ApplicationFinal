@@ -864,4 +864,23 @@ private void rebuildBalancesFromDistributions(int empId, int acYearId, int typeI
     private BalanceTrack createNewBalanceTrack_(int employeeId, int academicYearId, int typeId, int createdBy) {
         return createNewBalanceTrack(employeeId, academicYearId, typeId, createdBy, false);
     }
+    
+public List<GenericDropdownDTO> fetchCampusesByCityAndCategory(String category, Integer cityId) {
+    	
+        String cat = category == null ? "" : category.toLowerCase();
+ 
+        switch (cat) {
+            case "school":
+                return campusRepository.findSchoolCampusesByCity(cityId);
+ 
+            case "college":
+            case "clg":
+            case "clge":
+                return campusRepository.findCollegeCampusesByCity(cityId);
+ 
+            default:
+                return campusRepository.findAllCampusesByCity(cityId);
+        }
+    }
+ 
 }

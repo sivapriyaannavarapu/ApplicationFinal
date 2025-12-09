@@ -297,6 +297,16 @@ public class DistributionGet {
 
 	         return applicationService.getDgmCampusesByZoneAndCategory(zoneId, category);
 	     }
+	     
+	     @GetMapping("/campuses/category/{cityId}")
+		    public ResponseEntity<List<GenericDropdownDTO>> getCampuses(
+		            @RequestParam(required = false) String category,
+		            @PathVariable Integer cityId) {
+	
+		        return ResponseEntity.ok(
+		           campusService.fetchCampusesByCityAndCategory(category, cityId)
+		        );
+		    }
 
 	 	
 }
