@@ -1,5 +1,6 @@
 package com.application.dto;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -51,9 +52,9 @@ public class ApplicationFastDetailsGet {
     private Integer cityId;
     private String cityName;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date orientationStartDate;
+    private LocalDate orientationStartDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date orientationEndDate;
+    private LocalDate orientationEndDate;
     private Float orientationFee;
  
     // Address Information

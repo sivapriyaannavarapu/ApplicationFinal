@@ -23,8 +23,8 @@ public class ProConcession {
 	private int pro_conc_id;
 	private String adm_no;
 	private String reason;
-	private int conc_amount;
-//	private int is_active;
+	private Integer conc_amount;
+	private Integer is_active;
 	private int created_by;
 	
 	@ManyToOne

@@ -29,6 +29,7 @@ import com.application.entity.Distribution;
 import com.application.entity.Employee;
 import com.application.entity.ParentDetails;
 import com.application.entity.PaymentDetails;
+import com.application.entity.ProConcession;
 import com.application.entity.Sibling;
 import com.application.entity.Status;
 import com.application.entity.StudentAcademicDetails;
@@ -40,7 +41,49 @@ import com.application.entity.StudentOrientationDetails;
 import com.application.entity.StudentPersonalDetails;
 import com.application.entity.StudentRelation;
 import com.application.entity.StudyType;
-import com.application.repository.*;
+import com.application.repository.AcademicYearRepository;
+import com.application.repository.AdmissionTypeRepository;
+import com.application.repository.BloodGroupRepository;
+import com.application.repository.CampusRepository;
+import com.application.repository.CampusSchoolTypeRepository;
+import com.application.repository.CasteRepository;
+import com.application.repository.CityRepository;
+import com.application.repository.CmpsOrientationBatchFeeViewRepository;
+import com.application.repository.CollegeTypeRepo;
+import com.application.repository.ConcessionReasonRepository;
+import com.application.repository.ConcessionTypeRepository;
+import com.application.repository.DgmRepository;
+import com.application.repository.DistributionRepository;
+import com.application.repository.DistrictRepository;
+import com.application.repository.EmployeeRepository;
+import com.application.repository.FoodTypeRepository;
+import com.application.repository.GenderRepository;
+import com.application.repository.MandalRepository;
+import com.application.repository.OccupationRepository;
+import com.application.repository.OrgBankBranchRepository;
+import com.application.repository.OrgBankRepository;
+import com.application.repository.OrientationRepository;
+import com.application.repository.ParentDetailsRepository;
+import com.application.repository.PaymentDetailsRepository;
+import com.application.repository.PaymentModeRepository;
+import com.application.repository.ProConcessionRepository;
+import com.application.repository.QuotaRepository;
+import com.application.repository.ReligionRepository;
+import com.application.repository.SectorRepository;
+import com.application.repository.SiblingRepository;
+import com.application.repository.StateRepository;
+import com.application.repository.StatusRepository;
+import com.application.repository.StudentAcademicDetailsRepository;
+import com.application.repository.StudentAddressRepository;
+import com.application.repository.StudentApplicationTransactionRepository;
+import com.application.repository.StudentClassRepository;
+import com.application.repository.StudentConcessionTypeRepository;
+import com.application.repository.StudentOrientationDetailsRepository;
+import com.application.repository.StudentPersonalDetailsRepository;
+import com.application.repository.StudentRelationRepository;
+import com.application.repository.StudentTypeRepository;
+import com.application.repository.StudyTypeRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 
@@ -127,6 +170,8 @@ public class ApplicationFastSale {
 	CampusSchoolTypeRepository schoolTypeRepository;
 	@Autowired
 	CollegeTypeRepo collegeTypeRepo;
+	@Autowired
+	private ProConcessionRepository proConcessionRepository;
 
 	ApplicationFastSale(EmployeeRepository employeeRepository, ReligionRepository religionRepository,
 			DgmRepository dgmRepository) {
@@ -784,6 +829,26 @@ public class ApplicationFastSale {
 				if (concDto.getAuthorizedById() != null)
 					concession.setConc_authorised_by(concDto.getAuthorizedById());
 				concessionRepository.save(concession);
+				
+				 if (concDto.getProConcessionAmount() != null &&
+				            concDto.getProConcessionAmount() > 0) {
+
+				            ProConcession proconc = new ProConcession();
+
+				            proconc.setAdm_no(String.valueOf(savedAcademicDetails.getStudAdmsNo()));
+				            proconc.setConc_amount(concDto.getProConcessionAmount());
+				            proconc.setReason(concDto.getProConcessionReason());
+				            proconc.setCreated_by(concDto.getCreatedBy());
+				            proconc.setIs_active(1);
+
+				            if (concDto.getProConcessionGivenBy() != null) {
+				                employeeRepository.findById(concDto.getProConcessionGivenBy())
+				                        .ifPresent(proconc::setEmployee);
+				            }
+
+				            proConcessionRepository.save(proconc);
+				        }
+
 			}
 		}
 
@@ -956,6 +1021,11 @@ public class ApplicationFastSale {
 		if (academic.getStudyType() != null) {
 			dto.setStudyTypeId(academic.getStudyType().getStudy_type_id());
 			dto.setStudyTypeName(academic.getStudyType().getStudy_type_name());
+		}
+		
+		if (academic.getCampusSchoolType() != null) {
+		    dto.setSchoolTypeId(academic.getCampusSchoolType().getSchool_type_id());
+		    dto.setSchoolTypeName(academic.getCampusSchoolType().getSchool_type_name());
 		}
 		
 
@@ -1144,6 +1214,33 @@ public class ApplicationFastSale {
 
 	        dto.getConcessions().add(item);
 	    });
+		
+		List<ProConcession> proConcs = proConcessionRepository
+		        .findByAdmNo(String.valueOf(academic.getStudAdmsNo()));
+
+		for (ProConcession pc : proConcs) {
+
+		    StudentApplicationSingleDTO.ConcessionItem item =
+		            new StudentApplicationSingleDTO.ConcessionItem();
+
+		    // PRO amount
+		    item.setProAmount(pc.getConc_amount() != null ? pc.getConc_amount().floatValue() : null);
+
+		    // PRO reason (free text)
+		    item.setProReason(pc.getReason());
+
+		    // Given By (Employee)
+		    if (pc.getEmployee() != null) {
+		        item.setProGivenById(pc.getEmployee().getEmp_id());
+
+		        String fullName = pc.getEmployee().getFirst_name()
+		                + (pc.getEmployee().getLast_name() != null ? " " + pc.getEmployee().getLast_name() : "");
+
+		        item.setProGivenByName(fullName);
+		    }
+
+		    dto.getConcessions().add(item);
+		}
 
 		return dto;
 	}
@@ -1484,6 +1581,43 @@ public class ApplicationFastSale {
 				concessionRepository.save(conc);
 			}
 		}
+		
+		if (formData.getConcessions() != null) {
+
+		    String admNo = String.valueOf(updatedAcademicDetails.getStudAdmsNo());
+
+		    // Fetch existing PRO concessions
+		    List<ProConcession> existingPro = proConcessionRepository.findByAdmNo(admNo);
+
+		    // Mark old rows inactive
+		    for (ProConcession pc : existingPro) {
+		        pc.setIs_active(0);
+		        proConcessionRepository.save(pc);
+		    }
+
+		    // Insert new PRO concession from request
+		    for (ConcessionConfirmationDTO c : formData.getConcessions()) {
+
+		        if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
+
+		            ProConcession pc = new ProConcession();
+
+		            pc.setAdm_no(admNo);
+		            pc.setConc_amount(c.getProConcessionAmount());
+		            pc.setReason(c.getProConcessionReason());
+		            pc.setCreated_by(c.getCreatedBy() != null ? c.getCreatedBy() : 0);
+		            pc.setIs_active(1);
+
+		            // Set employee if exists
+		            if (c.getProConcessionGivenBy() != null) {
+		                employeeRepository.findById(c.getProConcessionGivenBy())
+		                        .ifPresent(pc::setEmployee);
+		            }
+
+		            proConcessionRepository.save(pc);
+		        }
+		    }
+		}
 
 		// ==============================================================
 		// 8. UPDATE ADDRESS
@@ -1564,65 +1698,114 @@ public class ApplicationFastSale {
 
 		// 3. Save/Update Concession Details (Concession logic remains the same)
 
-		if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
-			// ... (Concession UPSERT logic runs here) ...
+if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
 
-			Map<Integer, StudentConcessionType> existingConcessionsMap = concessionRepository
-					.findByStudAdmsId(savedAcademicDetails.getStud_adms_id()).stream()
-					.filter(c -> c.getConcessionType() != null).collect(Collectors.toMap(
-							c -> c.getConcessionType().getConcTypeId(), Function.identity(), (first, second) -> first));
+    Map<Integer, StudentConcessionType> existingConcessionsMap =
+            concessionRepository.findByStudAdmsId(savedAcademicDetails.getStud_adms_id())
+                    .stream()
+                    .filter(c -> c.getConcessionType() != null)
+                    .collect(Collectors.toMap(
+                            c -> c.getConcessionType().getConcTypeId(),
+                            Function.identity(),
+                            (first, second) -> first
+                    ));
 
-			AcademicYear currentYear = savedAcademicDetails.getAcademicYear();
-			if (currentYear == null) {
-				if (formData.getAcademicYearId() == null) {
-					throw new IllegalArgumentException(
-							"Academic Year must be provided when no existing year is found.");
-				}
-				currentYear = academicYearRepository.findById(formData.getAcademicYearId())
-						.orElseThrow(() -> new EntityNotFoundException("Academic Year not found"));
-			}
+    AcademicYear currentYear = savedAcademicDetails.getAcademicYear();
 
-			for (ConcessionConfirmationDTO concDto : formData.getConcessions()) {
-				StudentConcessionType concession = existingConcessionsMap.get(concDto.getConcessionTypeId());
+    if (currentYear == null) {
+        if (formData.getAcademicYearId() == null) {
+            throw new IllegalArgumentException("Academic Year must be provided when no existing year is found.");
+        }
+        currentYear = academicYearRepository.findById(formData.getAcademicYearId())
+                .orElseThrow(() -> new EntityNotFoundException("Academic Year not found"));
+    }
 
-				if (concession == null) {
-					concession = new StudentConcessionType();
-					concession.setStudAdmsId(savedAcademicDetails.getStud_adms_id());
-					concession.setAcademicYear(currentYear);
-					concession.setCreated_by(concDto.getCreatedBy());
-					concession.setCreated_Date(LocalDateTime.now());
+    // ======================================================
+    // ✅ 1. SAVE / UPDATE REGULAR CONCESSIONS
+    // ======================================================
+    for (ConcessionConfirmationDTO concDto : formData.getConcessions()) {
 
-					if (concDto.getConcessionTypeId() != null) {
-						concessionTypeRepository.findById(concDto.getConcessionTypeId())
-								.ifPresent(concession::setConcessionType);
-					}
-				}
+        if (concDto.getConcessionTypeId() == null || concDto.getConcessionTypeId() == 0) {
+            continue; // Skip PRO-only items
+        }
 
-				concession.setConc_amount(concDto.getConcessionAmount());
-				concession.setComments(concDto.getComments());
+        StudentConcessionType concession = existingConcessionsMap.get(concDto.getConcessionTypeId());
 
-				if (concDto.getReasonId() != null) {
-					concessionReasonRepository.findById(concDto.getReasonId())
-							.ifPresent(concession::setConcessionReason);
-				}
-				concession.setConc_referred_by(concDto.getConcReferedBy());
-				if (concDto.getGivenById() != null) {
-					concession.setConc_issued_by(concDto.getGivenById());
-				}
-				if (concDto.getAuthorizedById() != null) {
-					concession.setConc_authorised_by(concDto.getAuthorizedById());
-				}
+        if (concession == null) {
+            concession = new StudentConcessionType();
+            concession.setStudAdmsId(savedAcademicDetails.getStud_adms_id());
+            concession.setAcademicYear(currentYear);
+            concession.setCreated_by(concDto.getCreatedBy());
+            concession.setCreated_Date(LocalDateTime.now());
 
-				concessionRepository.save(concession);
-			}
-		}
+            concessionTypeRepository.findById(concDto.getConcessionTypeId())
+                    .ifPresent(concession::setConcessionType);
+        }
 
-		// ==============================================================
-		// 🔑 PART 4: CREATE THE PAYMENT AND TRANSACTION (New Logic)
-		// ==============================================================
-		// ==============================================================
-		// 🔑 PART 4: ALWAYS CREATE NEW PAYMENT + TRANSACTION
-		// ==============================================================
+        concession.setConc_amount(concDto.getConcessionAmount());
+        concession.setComments(concDto.getComments());
+
+        if (concDto.getReasonId() != null) {
+            concessionReasonRepository.findById(concDto.getReasonId())
+                    .ifPresent(concession::setConcessionReason);
+        }
+
+        concession.setConc_referred_by(concDto.getConcReferedBy());
+        concession.setConc_issued_by(concDto.getGivenById());
+        concession.setConc_authorised_by(concDto.getAuthorizedById());
+
+        concessionRepository.save(concession);
+    }
+
+    // ======================================================
+    // ✅ 2. SAVE / UPDATE PRO CONCESSIONS (RUN ONCE)
+    // ======================================================
+    String admNo = String.valueOf(savedAcademicDetails.getStudAdmsNo());
+
+ // Fetch existing ACTIVE PRO concession
+ ProConcession activePro = proConcessionRepository.findByAdmNo(admNo)
+         .stream()
+         .filter(pc -> pc.getIs_active() == 1)
+         .findFirst()
+         .orElse(null);
+
+ for (ConcessionConfirmationDTO c : formData.getConcessions()) {
+
+     if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
+
+         // CASE 1: Existing PRO found → UPDATE IT
+         if (activePro != null) {
+             activePro.setConc_amount(c.getProConcessionAmount());
+             activePro.setReason(c.getProConcessionReason());
+             activePro.setCreated_by(c.getCreatedBy());
+
+             if (c.getProConcessionGivenBy() != null) {
+                 employeeRepository.findById(c.getProConcessionGivenBy())
+                         .ifPresent(activePro::setEmployee);
+             }
+
+             proConcessionRepository.save(activePro);
+         }
+         // CASE 2: No PRO exists → CREATE NEW
+         else {
+             ProConcession pc = new ProConcession();
+             pc.setAdm_no(admNo);
+             pc.setConc_amount(c.getProConcessionAmount());
+             pc.setReason(c.getProConcessionReason());
+             pc.setCreated_by(c.getCreatedBy());
+             pc.setIs_active(1);
+
+             if (c.getProConcessionGivenBy() != null) {
+                 employeeRepository.findById(c.getProConcessionGivenBy())
+                         .ifPresent(pc::setEmployee);
+             }
+
+             proConcessionRepository.save(pc);
+         }
+     }
+ }
+}
+
 		PaymentDetailsDTO paymentDTO = formData.getPaymentDetails();
 
 		if (paymentDTO != null && paymentDTO.getAmount() != null) {

@@ -13,6 +13,8 @@ public class CampusAndZoneDTO {
     private String campusName;
     private Integer zoneId;
     private String zoneName;
+    private Integer cityId;
+    private String cityName;
     private Integer academicYearId;
     private String academicYear;
     private Float applicationFee;

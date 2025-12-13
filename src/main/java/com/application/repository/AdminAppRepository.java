@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
- 
-import com.application.dto.AppRangeDTO;
+
 import com.application.entity.AdminApp;
  
 @Repository
@@ -107,6 +106,34 @@ public interface AdminAppRepository extends JpaRepository<AdminApp, Integer> {
             ORDER BY a.admin_app_id ASC
         """)
      List<AdminApp> findMasterRecordByYearAndAmount(
+             @Param("yearId") int yearId,
+             @Param("amount") Double amount
+     );
+    
+    @Query("""
+            SELECT COALESCE(SUM(a.totalApp), 0)
+            FROM AdminApp a
+            WHERE a.employee.emp_id = :empId
+              AND a.academicYear.acdcYearId = :yearId
+              AND (a.app_amount = :amount OR a.app_fee = :amount)
+              AND a.is_active = 1
+        """)
+    Long sumTotalAppByEmployeeAndAcademicYearAndAmount(
+        @Param("empId") Integer empId,
+        @Param("yearId") Integer yearId,
+        @Param("amount") Double amount
+    );
+    
+    @Query("""
+            SELECT a FROM AdminApp a
+            WHERE a.employee.emp_id = :empId
+              AND a.academicYear.acdcYearId = :yearId
+              AND (a.app_amount = :amount OR a.app_fee = :amount)
+              AND a.is_active = 1
+            ORDER BY a.admin_app_id ASC
+        """)
+     List<AdminApp> findMasterRecordByYearAndAmountAndEmployee(
+             @Param("empId") int empId,
              @Param("yearId") int yearId,
              @Param("amount") Double amount
      );

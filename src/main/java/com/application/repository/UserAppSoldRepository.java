@@ -310,5 +310,23 @@ public interface UserAppSoldRepository extends JpaRepository<UserAppSold, Long> 
                @Param("zoneId") Integer zoneId, 
                @Param("yearId") Integer yearId
        );
+      
+   // In UserAppSoldRepository.java
+
+      @Query("""
+          SELECT NEW com.application.dto.GraphSoldSummaryDTO(
+              COALESCE(SUM(uas.totalAppCount), 0),
+              COALESCE(SUM(uas.sold), 0))
+          FROM UserAppSold uas
+          WHERE uas.empId = :empId
+            AND uas.acdcYearId = :acdcYearId
+          """)
+      Optional<GraphSoldSummaryDTO> getSalesSummaryByEmployee(@Param("empId") Integer empId,
+                                                              @Param("acdcYearId") Integer acdcYearId);
+      
+   // In UserAppSoldRepository.java
+
+      @Query("SELECT DISTINCT uas.acdcYearId FROM UserAppSold uas WHERE uas.empId = :empId")
+      List<Integer> findDistinctYearIdsByEmployee(@Param("empId") Integer empId);
 
 }

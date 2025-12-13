@@ -15,4 +15,8 @@ public class ConcessionConfirmationDTO {
     private String comments;
     private Integer createdBy;
     private Integer concReferedBy;
+    private Integer proConcessionAmount;
+    private String proConcessionReason;
+    private Integer proConcessionGivenBy;
+
 }

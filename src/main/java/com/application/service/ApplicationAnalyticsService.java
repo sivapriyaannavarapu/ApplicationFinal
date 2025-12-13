@@ -188,6 +188,33 @@ public CombinedAnalyticsDTO getRollupAnalytics(Integer empId) {
         );
         return analytics;
     }
+    
+ // In AnalyticsService.java
+
+public CombinedAnalyticsDTO getEmployeeAnalytics(Long empId) {
+    Integer empIdInt = empId.intValue(); 
+
+    Dgm dgmRecord = dgmRepository.lookupByEmpId(empIdInt) 
+        .orElseThrow(() -> new RuntimeException("DGM record not found for Employee ID: " + empId));
+    
+    Integer cmpsId = dgmRecord.getCampus().getCampusId(); 
+    
+    CombinedAnalyticsDTO analytics = new CombinedAnalyticsDTO();
+
+    analytics.setGraphData(getGraphData(
+        (yearId) -> userAppSoldRepository.getSalesSummaryByCampusIdAndYear(cmpsId, yearId),
+        () -> userAppSoldRepository.findDistinctYearIdsByCampusId(cmpsId)
+    ));
+    analytics.setMetricsData(
+        getMetricsData(
+            (yearId) -> appStatusTrackRepository.getMetricsByCampusIdAndYear(cmpsId, yearId), 
+            (yearId) -> appStatusTrackRepository.getProMetricByCampusId_FromStatus(cmpsId, yearId),
+            () -> appStatusTrackRepository.findDistinctYearIdsByCampusId(cmpsId)
+        )
+    );
+    
+    return analytics;
+}
  
     public CombinedAnalyticsDTO getCampusAnalytics(Long campusId) {
         CombinedAnalyticsDTO analytics = new CombinedAnalyticsDTO();

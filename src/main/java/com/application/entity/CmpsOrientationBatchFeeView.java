@@ -1,5 +1,6 @@
 package com.application.entity;
  
+import java.time.LocalDate;
 import java.util.Date;
  
 import jakarta.persistence.Column;
@@ -43,10 +44,10 @@ public class CmpsOrientationBatchFeeView {
     private String orientationBatchName;
  
     @Column(name = "orientation_start_date")
-    private Date orientationStartDate;
+    private LocalDate orientationStartDate;
  
     @Column(name = "orientation_end_date")
-    private Date orientationEndDate;
+    private LocalDate orientationEndDate;
  
     @Column(name = "orientation_fee")
     private float orientationFee;

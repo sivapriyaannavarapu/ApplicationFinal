@@ -1,5 +1,6 @@
 package com.application.dto;
  
+import java.time.LocalDate;
 import java.util.Date;
  
 import lombok.AllArgsConstructor;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrientationFeeAndDatesDTO {
-    private Date startDate;
-    private Date endDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private float fee;
 }

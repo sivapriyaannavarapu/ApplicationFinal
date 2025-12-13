@@ -1,4 +1,4 @@
-	package com.application.service;
+package com.application.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,86 +49,7 @@ public class UserAppSoldService {
                 })
                 .collect(Collectors.toList());
     }
-    
-    
-//    public List<FullGraphResponseDTO> getAllGraphs() {
-//        List<FullGraphResponseDTO> result = new ArrayList<>();
-//
-//        // 1. Zone wise (entityId = 2)
-//        result.add(buildGraph("Zone wise graph", "DISTRIBUTE_ZONE", 2));
-//
-//        // 2. DGM wise (entityId = 3)
-//        result.add(buildGraph("DGM wise graph", "DISTRIBUTE_DGM", 3));
-//
-//        // 3. Campus wise (entityId = 4)
-//        result.add(buildGraph("Campus wise graph", "DISTRIBUTE_CAMPUS", 4));
-//
-//        return result;
-//    }
-//
-//    // Common method to build each graph
-//    private FullGraphResponseDTO buildGraph(String title, String permissionKey, int entityId) {
-//
-//        List<Object[]> rawList = userAppSoldRepository.getYearWiseIssuedAndSoldByEntity(entityId);
-//
-//        List<GraphBarDTO> barData = new ArrayList<>();
-//
-//        // Build graphBarData with issued=100 and sold=(sold/issued)*100
-//        for (Object[] row : rawList) {
-//            int year = (Integer) row[0];
-//            int issuedRaw = ((Long) row[1]).intValue();   // totalAppCount
-//            int soldRaw = ((Long) row[2]).intValue();
-//
-//            String academicYear = year + "-" + (year + 1);
-//
-//            // issued is always 100%
-//            int issuedPercent = 100;
-//
-//            // soldPercent = performance
-//            int soldPercent = 0;
-//            if (issuedRaw > 0) {
-//                soldPercent = (int) Math.round(((double) soldRaw / issuedRaw) * 100);
-//            }
-//
-//            barData.add(new GraphBarDTO(academicYear, issuedPercent, soldPercent));
-//        }
-//
-//        // graphData (compare last 2 years sold and issued)
-//        double issuedChange = 0;
-//        double soldChange = 0;
-//
-//        if (barData.size() >= 2) {
-//            GraphBarDTO prev = barData.get(barData.size() - 2);
-//            GraphBarDTO last = barData.get(barData.size() - 1);
-//
-//            issuedChange = calculatePercentChange(prev.getIssued(), last.getIssued());
-//            soldChange = calculatePercentChange(prev.getSold(), last.getSold());
-//        }
-//
-//        List<GraphDataDTO> summaryData = List.of(
-//                new GraphDataDTO("Issued", issuedChange),
-//                new GraphDataDTO("Sold", soldChange)
-//        );
-//
-//        FullGraphResponseDTO dto = new FullGraphResponseDTO();
-//        dto.setTitle(title);
-//        dto.setPermissionKey(permissionKey);
-//        dto.setGraphData(summaryData);
-//        dto.setGraphBarData(barData);
-//
-//        return dto;
-//    }
-//
-//
-//    private double calculatePercentChange(int previous, int current) {
-//        if (previous == 0) {
-//            return 0;
-//        }
-//        return ((double) (current - previous) / previous) * 100;
-//    }
-//    
-//    
-    
+   
     public List<RateResponseDTO> getAllRateData() {
         System.out.println("--- LOG: STARTING NATIVE RATE CALCULATION ---");
         List<RateResponseDTO> responseList = new ArrayList<>();
@@ -171,22 +92,38 @@ public class UserAppSoldService {
         return list;
     }
 
-    private RateResponseDTO processAnalytics(String type, String permKey, String dropTitle, String topTitle, List<PerformanceDTO> data) {
-        // 1. Top Rated (High to Low)
-        List<RateItemDTO> top4 = data.stream()
+    private RateResponseDTO processAnalytics(
+            String type,
+            String permKey,
+            String dropTitle,
+            String topTitle,
+            List<PerformanceDTO> data) {
+
+        // 👉 Filter out 0% — show only those with real performance
+        List<PerformanceDTO> valid = data.stream()
+                .filter(d -> d.getPerformancePercentage() > 0)
+                .collect(Collectors.toList());
+
+        // TOP 4 (High → Low)
+        List<RateItemDTO> top4 = valid.stream()
                 .sorted((a, b) -> Double.compare(b.getPerformancePercentage(), a.getPerformancePercentage()))
                 .limit(4)
                 .map(p -> new RateItemDTO(p.getName(), p.getPerformancePercentage()))
                 .collect(Collectors.toList());
 
-        // 2. Drop Rated (Low to High)
-        List<RateItemDTO> drop4 = data.stream()
+        // DROP 4 (Low → High)
+        List<RateItemDTO> drop4 = valid.stream()
                 .sorted((a, b) -> Double.compare(a.getPerformancePercentage(), b.getPerformancePercentage()))
                 .limit(4)
                 .map(p -> new RateItemDTO(p.getName(), p.getPerformancePercentage()))
                 .collect(Collectors.toList());
 
-        return new RateResponseDTO(type, permKey, new RateSectionDTO(dropTitle, drop4), new RateSectionDTO(topTitle, top4));
+        return new RateResponseDTO(
+                type,
+                permKey,
+                new RateSectionDTO(dropTitle, drop4),
+                new RateSectionDTO(topTitle, top4)
+        );
     }
 
     private RateResponseDTO buildResponse(

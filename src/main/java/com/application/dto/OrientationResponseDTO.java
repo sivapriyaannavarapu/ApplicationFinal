@@ -1,5 +1,6 @@
 package com.application.dto;
 
+import java.time.LocalDate;
 import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,8 +16,8 @@ public class OrientationResponseDTO {
     private String orientation_name;
     private int orientation_batch_id;
     private String orientation_batch_name;
-    private Date orientation_start_date;
-    private Date orientation_end_date;
+    private LocalDate orientation_start_date;
+    private LocalDate orientation_end_date;
     private float orientation_fee;
     private String section_name;
     private Integer sectionId;

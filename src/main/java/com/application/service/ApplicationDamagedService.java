@@ -203,7 +203,7 @@ public class ApplicationDamagedService {
             // If exists → check whether at PRO stage
             appStatus = existingAppStatusOpt.get();
  
-            if (appStatus.getStatus().getStatus_id() != 1) { // 1 = PRO
+            if (appStatus.getStatus().getStatus_id() != 1 && appStatus.getStatus().getStatus_id() != 2) { // 1 = PRO
                 throw new IllegalStateException(
                         "Application is not with PRO. Current status: " +
                         appStatus.getStatus().getStatus_type()

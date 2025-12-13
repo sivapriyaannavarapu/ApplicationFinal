@@ -37,5 +37,12 @@ public interface AppStatusTrackViewRepository extends JpaRepository<AppStatusTra
 		       "FROM AppStatusTrackView a " +
 		       "WHERE a.cmps_id IN :campusIds")
 		List<AppStatusDTO> findDTOByCampusIds(@Param("campusIds") List<Integer> campusIds);
+	 
+	 @Query("SELECT a FROM AppStatusTrackView a WHERE a.num >= :startNo AND a.num <= :endNo")
+     List<AppStatusTrackView> findByApplicationNumberRange(@Param("startNo") Integer startNo, @Param("endNo") Integer endNo);
+    
+     // Count applications by status in a range
+     @Query("SELECT COUNT(a) FROM AppStatusTrackView a WHERE a.num >= :startNo AND a.num <= :endNo AND a.status = :status")
+     Long countByApplicationNumberRangeAndStatus(@Param("startNo") Integer startNo, @Param("endNo") Integer endNo, @Param("status") String status);
 
 }

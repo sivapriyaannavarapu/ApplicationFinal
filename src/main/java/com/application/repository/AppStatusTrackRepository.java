@@ -363,6 +363,34 @@ public interface AppStatusTrackRepository extends JpaRepository<AppStatusTrack, 
 	             @Param("campusId") Integer campusId, 
 	             @Param("yearId") Integer yearId
 	     );
+	     
+	  // In AppStatusTrackRepository.java
+
+	     @Query("SELECT NEW com.application.dto.MetricsAggregateDTO("
+	         + "COALESCE(SUM(ast.totalApp), 0), COALESCE(SUM(ast.appSold), 0), COALESCE(SUM(ast.appConfirmed), 0), "
+	         + "COALESCE(SUM(ast.appAvailable), 0), COALESCE(SUM(ast.appUnavailable), 0), "
+	         + "COALESCE(SUM(ast.appDamaged), 0), COALESCE(SUM(ast.appIssued), 0)) "
+	         + "FROM AppStatusTrack ast "
+	         + "WHERE ast.employee.id = :empId " // Check: Is 'empId' the actual PK field name on the Employee entity?
+	         + "AND ast.academicYear.acdcYearId = :acdcYearId") // Check: This was the fix from the last error
+	     Optional<MetricsAggregateDTO> getMetricsByEmployeeAndYear(
+	         @Param("empId") Long empId, 
+	         @Param("acdcYearId") Integer acdcYearId);
+	     
+	  @Query("SELECT COALESCE(SUM(a.appAvailable), 0) " +
+	         "FROM AppStatusTrack a " +
+	         "WHERE a.employee.id = :empId " + // <--- CHANGED FROM .empId to .id
+	         "AND a.academicYear.acdcYearId = :yearId " +
+	         "AND a.issuedByType.appIssuedId = 4")
+	  Optional<Long> getProMetricByEmployeeId_FromStatus(
+	      @Param("empId") Integer empId,
+	      @Param("yearId") Integer yearId
+	  );
+	     
+	  // In AppStatusTrackRepository.java
+
+	     @Query("SELECT DISTINCT ast.academicYear.acdcYearId FROM AppStatusTrack ast WHERE ast.employee.id = :empId")
+	     List<Integer> findDistinctYearIdsByEmployee(@Param("empId") Long empId); // Note: Use Long if employee.empId is Long
  
 }
  

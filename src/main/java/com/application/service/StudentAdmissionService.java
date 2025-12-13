@@ -354,6 +354,16 @@ public class StudentAdmissionService {
                 .map(this::convertToOrientationResponseDto)
                 .collect(Collectors.toList());
     }
+    
+    public OrientationFeeAndDatesDTO getFeeAndDatesByCampusClassAndOrientation(Integer orientationId, Integer cmpsId, Integer classId) {
+        OrientationFeeAndDatesDTO result = cmpsOrientationBatchFeeViewRepo.getOrientationFeeAndDatesByCampusClassAndOrientation(orientationId, cmpsId, classId);
+ 
+        if (result == null) {
+            throw new RuntimeException("No orientation details found for orientationId: " + orientationId + ", cmpsId: " + cmpsId + ", classId: " + classId);
+        }
+ 
+        return result;
+    }
  
     private OrientationResponseDTO convertToOrientationResponseDto(CmpsOrientationBatchFeeView entity) {
         return new OrientationResponseDTO(
@@ -452,7 +462,7 @@ public class StudentAdmissionService {
                 .orElseThrow(() -> new RuntimeException("Campus not found for ID: " + campusId));
     }
     
-    @Transactional(readOnly = true)
+       @Transactional(readOnly = true)
     public CampusAndZoneDTO getApplicationDetailsWithFee(long applicationNo) {
         logger.info("Fetching details with fee for Application No: {}", applicationNo);
      
@@ -473,7 +483,7 @@ public class StudentAdmissionService {
         // 2. Fetch Zone ID using Zone Name
         Integer zoneId = getZoneIdByName(zoneName);
      
-        // 3. Fetch Campus to get Business Type
+        // 3. Fetch Campus to get Business Type and City
         Campus campus = campusRepo.findById(campusId)
                 .orElseThrow(() -> new EntityNotFoundException("Campus entity not found for ID: " + campusId));
      
@@ -484,6 +494,17 @@ public class StudentAdmissionService {
         }
         String businessTypeName = businessType.getBusinessTypeName();
         logger.debug("Found Campus: BusinessType='{}'", businessTypeName);
+       
+        // Extract City information from Campus
+        Integer cityId = null;
+        String cityName = null;
+        if (campus.getCity() != null) {
+            cityId = campus.getCity().getCityId();
+            cityName = campus.getCity().getCityName();
+            logger.debug("Found City: CityId={}, CityName='{}'", cityId, cityName);
+        } else {
+            logger.warn("City is not linked for Campus ID: {}", campusId);
+        }
      
         // 4. Fetch Academic Year from BalanceTrack
         logger.debug("Fetching Academic Year from BalanceTrack for App No: {}", applicationNo);
@@ -514,13 +535,13 @@ public class StudentAdmissionService {
                 applicationFee = campusDetailsOpt.get().getApp_fee();
                 logger.debug("SCHOOL Application Fee from CampusDetails: {}", applicationFee);
             } else {
-                logger.warn("CampusDetails not found for CampusId={}, AcademicYearId={}. Application fee will be null.", 
+                logger.warn("CampusDetails not found for CampusId={}, AcademicYearId={}. Application fee will be null.",
                         campusId, academicYearId);
             }
      
         } else if ("COLLEGE".equalsIgnoreCase(businessTypeName)) {
             // COLLEGE: Fees now come from AdminApp table
-            logger.debug("Business type is COLLEGE. Fetching fees from AdminApp for AppNo={} and AcademicYearId={}", 
+            logger.debug("Business type is COLLEGE. Fetching fees from AdminApp for AppNo={} and AcademicYearId={}",
                     applicationNo, academicYearId);
      
             Optional<AdminApp> adminAppOpt = adminAppRepository
@@ -539,7 +560,7 @@ public class StudentAdmissionService {
      
                 logger.debug("COLLEGE Fees from AdminApp → amount: {}, applicationFee: {}", amount, applicationFee);
             } else {
-                logger.warn("No active AdminApp record found for Application No: {} and AcademicYearId: {}. Both fees will be null.", 
+                logger.warn("No active AdminApp record found for Application No: {} and AcademicYearId: {}. Both fees will be null.",
                         applicationNo, academicYearId);
                 amount = null;
                 applicationFee = null;
@@ -556,6 +577,8 @@ public class StudentAdmissionService {
         resultDTO.setCampusName(campusName);
         resultDTO.setZoneId(zoneId);
         resultDTO.setZoneName(zoneName);
+        resultDTO.setCityId(cityId);
+        resultDTO.setCityName(cityName);
         resultDTO.setAcademicYearId(academicYearId);
         resultDTO.setAcademicYear(academicYearString);
         resultDTO.setApplicationFee(applicationFee);
@@ -564,24 +587,24 @@ public class StudentAdmissionService {
         logger.info("Successfully fetched details with fee for Application No: {}", applicationNo);
         return resultDTO;
     }
-	// --- Helper method to cache Zone lookup by name (No changes needed here) ---
+    // --- Helper method to cache Zone lookup by name (No changes needed here) ---
  
-	public Integer getZoneIdByName(String zoneName) {
-		if (zoneName == null || zoneName.isBlank()) {
-			logger.debug("Zone name provided is blank or null.");
-			return null;
-		}
-		logger.debug("Looking up Zone ID for name: '{}'", zoneName);
-		Optional<Zone> zoneOpt = zonerepo.findByZoneNameIgnoreCase(zoneName); // Uses updated repo method
+    public Integer getZoneIdByName(String zoneName) {
+        if (zoneName == null || zoneName.isBlank()) {
+            logger.debug("Zone name provided is blank or null.");
+            return null;
+        }
+        logger.debug("Looking up Zone ID for name: '{}'", zoneName);
+        Optional<Zone> zoneOpt = zonerepo.findByZoneNameIgnoreCase(zoneName); // Uses updated repo method
  
-		if (zoneOpt.isEmpty()) {
-			logger.warn("Zone entity not found for name: {}", zoneName);
-			return null;
-		} else {
-			logger.debug("Found Zone ID: {}", zoneOpt.get().getZoneId());
-			return zoneOpt.get().getZoneId();
-		}
-	}
+        if (zoneOpt.isEmpty()) {
+            logger.warn("Zone entity not found for name: {}", zoneName);
+            return null;
+        } else {
+            logger.debug("Found Zone ID: {}", zoneOpt.get().getZoneId());
+            return zoneOpt.get().getZoneId();
+        }
+    }
  
     public List<ConcessionTypeDTO> getConcessionTypesByNames(List<String> concTypes) {
         return concessionTypeRepo.findConcessionTypesByNames(concTypes);

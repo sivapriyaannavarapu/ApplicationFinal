@@ -1,6 +1,7 @@
 package com.application.dto;
 
 import java.util.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +62,9 @@ public class StudentApplicationSingleDTO {
     private String preSchoolStateName;
     private Integer preSchoolDistrictId;
     private String preSchoolDistrictName;
+    private Integer schoolTypeId;
+    private String schoolTypeName;
+
     
     //previous College
     private String preCollegeName;
@@ -98,9 +102,9 @@ public class StudentApplicationSingleDTO {
     private String orientationName;
     
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date orientationStartDate;
+    private LocalDate orientationStartDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date orientationEndDate;
+    private LocalDate orientationEndDate;
     private Float orientationFee;
     // ===========================
     // 4. PARENT DETAILS
@@ -173,5 +177,13 @@ public class StudentApplicationSingleDTO {
 
         private Integer concReferedBy;
         private String concReferedByName; // NEW
+        
+        private Float proAmount;
+        private String proReason;
+        private Integer proGivenById;
+        private String proGivenByName;
+
+        
+        
     }
 }

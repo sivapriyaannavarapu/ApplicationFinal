@@ -137,5 +137,19 @@ public interface BalanceTrackRepository extends JpaRepository<BalanceTrack, Inte
         @Param("empId") Integer empId,
         @Param("academicYearId") Integer academicYearId
     );
+    
+    @Query("""
+            SELECT COALESCE(SUM(b.appAvblCnt), 0)
+            FROM BalanceTrack b
+            WHERE b.employee.id = :empId
+              AND b.academicYear.acdcYearId = :academicYearId
+              AND b.amount = :amount
+              AND b.isActive = 1
+        """)
+    Long sumAppAvblCntByEmployeeAndAcademicYearAndAmount(
+        @Param("empId") Integer empId,
+        @Param("academicYearId") Integer academicYearId,
+        @Param("amount") Double amount
+    );
 }
 

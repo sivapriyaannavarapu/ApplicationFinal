@@ -114,4 +114,19 @@ public class AnalyticsController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    
+ // In AnalyticsController.java
+
+    @GetMapping("/dgm_employee/{id}")
+    public ResponseEntity<CombinedAnalyticsDTO> getEmployeeAnalytics(@PathVariable Long id) {
+        try {
+            CombinedAnalyticsDTO data = analyticsService.getEmployeeAnalytics(id);
+            return ResponseEntity.ok(data);
+        } catch (Exception e) {
+            System.err.println("Error in getEmployeeAnalytics: " + e.getMessage());
+            e.printStackTrace();
+            // Return a 500 Internal Server Error response
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

@@ -94,5 +94,8 @@ public interface DistributionRepository extends JpaRepository<Distribution, Inte
 		@Query("SELECT d FROM Distribution d WHERE d.issued_to_emp_id = :empId AND d.academicYear.acdcYearId = :yearId AND d.isActive = 1 ORDER BY d.appStartNo ASC")
 	    List<Distribution> findActiveHoldingsForEmp(@Param("empId") Integer empId, @Param("yearId") Integer yearId);
 		
+		@Query("SELECT d FROM Distribution d WHERE d.created_by = :empId AND d.academicYear.acdcYearId = :yearId AND d.isActive = 1 ORDER BY d.appStartNo ASC")
+        List<Distribution> findByCreatedByAndYear(@Param("empId") Integer empId, @Param("yearId") Integer yearId);
+		
 
 }
