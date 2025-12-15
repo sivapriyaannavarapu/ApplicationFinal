@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.application.dto.GenericDropdownDTO;
+import com.application.dto.GenericDropdownDTO_Dgm;
 import com.application.entity.Campus;
 import com.application.entity.Dgm;
 
@@ -61,8 +62,15 @@ public interface DgmRepository extends JpaRepository<Dgm, Integer> {
 	@Query("SELECT d FROM Dgm d WHERE d.employee.emp_id = :empId AND d.isActive = 1")
     Optional<Dgm> lookupByEmpId(@Param("empId") Integer empId);
 	
-	
+	List<Dgm> findByZoneZoneIdAndIsActive(Integer zoneId, int isActive);
 
+	 @Query("SELECT d FROM Dgm d WHERE d.employee.emp_id = :empId AND d.isActive = 1")
+	    Optional<Dgm> findActiveByEmpId(@Param("empId") Integer empId);
+	 
+	 @Query("SELECT new com.application.dto.GenericDropdownDTO_Dgm(" + "e.emp_id, "
+				+ "CONCAT(e.first_name, ' ', e.last_name), " + "d.campus.id) " + "FROM Dgm d " + "JOIN d.employee e "
+				+ "WHERE e.isActive = 1")
+		List<GenericDropdownDTO_Dgm> findAllDgmEmployeesWithCampusId();
 
 
 

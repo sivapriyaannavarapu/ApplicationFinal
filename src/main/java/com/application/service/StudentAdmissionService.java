@@ -968,6 +968,10 @@ public class StudentAdmissionService {
 		orientationDetails.setStudentAcademicDetails(savedAcademicDetails);
 		if (formData.getOrientationId() != null)
 			orientationRepo.findById(formData.getOrientationId()).ifPresent(orientationDetails::setOrientation);
+		if (formData.getClassId() != null && formData.getClassId() > 0) {
+		    classRepo.findById(formData.getClassId())
+		            .ifPresent(orientationDetails::setStudentClass);
+		}
 		studentOrientationDetailsRepo.save(orientationDetails);
  
 		// --- 4. Save Parent Details ---

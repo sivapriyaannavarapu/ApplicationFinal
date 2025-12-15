@@ -10,10 +10,11 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.application.dto.AppStatusTrackDTO;
 import com.application.dto.DashboardResponseDTO;
-import com.application.dto.GenericDropdownDTO;
+import com.application.dto.GenericDropdownDTO_Dgm;
 import com.application.dto.GraphBarDTO;
 import com.application.dto.GraphResponseDTO;
 import com.application.dto.MetricCardDTO;
@@ -113,10 +114,16 @@ public class AppStatusTrackService {
         return (int) (((double) (currentValue - previousValue) / previousValue) * 100);
     }
     
+//    @Cacheable(value = "dgmEmployees")
+//    public List<GenericDropdownDTO> getAllDgmEmployees() {
+//        return dgmRepository.findAllDgmEmployees();
+//    }
+//    
     @Cacheable(value = "dgmEmployees")
-    public List<GenericDropdownDTO> getAllDgmEmployees() {
-        return dgmRepository.findAllDgmEmployees();
+    public List<GenericDropdownDTO_Dgm> getAllDgmEmployees() {
+        return dgmRepository.findAllDgmEmployeesWithCampusId();
     }
+ 
 
     public DashboardResponseDTO getDashboardData() {
 

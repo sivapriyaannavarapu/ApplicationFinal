@@ -34,6 +34,9 @@ public interface ZonalAccountantRepository extends JpaRepository<ZonalAccountant
 	 
 	 @Query("SELECT z FROM ZonalAccountant z WHERE z.employee.emp_id = :empId AND z.isActive = 1")
 	    Optional<ZonalAccountant> lookupByEmpId(@Param("empId") Integer empId);
+	 
+	 @Query("SELECT z FROM ZonalAccountant z WHERE z.employee.emp_id = :empId AND z.isActive = 1")
+	    List<ZonalAccountant> findActiveByEmployee(@Param("empId") Integer empId);
 
 	
 }

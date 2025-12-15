@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.application.dto.DashboardResponseDTO;
 import com.application.dto.GenericDropdownDTO;
+import com.application.dto.GenericDropdownDTO_Dgm;
 import com.application.dto.MetricCardDTO;
 import com.application.service.AppStatusTrackService;
 
@@ -24,10 +25,16 @@ public class AppStatusTrackController {
 	    return appStatusTrackService.getMetricCards();
 	}
     
+//    @GetMapping("/dgm-employees")//used/c
+//    public List<GenericDropdownDTO> getAllDgmEmployees() {
+//        return appStatusTrackService.getAllDgmEmployees();
+//    }
+    
     @GetMapping("/dgm-employees")//used/c
-    public List<GenericDropdownDTO> getAllDgmEmployees() {
+    public List<GenericDropdownDTO_Dgm> getAllDgmEmployees() {
         return appStatusTrackService.getAllDgmEmployees();
     }
+    
     
     @GetMapping("/admin_cards_graph")
     public DashboardResponseDTO getDashboardOverview() {
