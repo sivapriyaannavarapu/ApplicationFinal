@@ -366,9 +366,10 @@ public class ApplicationFastSale {
 				  if (paymentDTO.getBranch() != null) {
 				        transaction.setBankBranch(paymentDTO.getBranch());
 				    }
-				  if (paymentDTO.getBranch() != null) {
-				        transaction.setBankBranch(paymentDTO.getBranch());
-				    }
+				  if (paymentDTO.getCity() != null) {
+					    transaction.setBankCityName(paymentDTO.getCity());
+					}
+
 
 				studentApplicationTransactionRepository.save(transaction);
 			}
@@ -928,6 +929,7 @@ public class ApplicationFastSale {
 		dto.setLastName(academic.getLast_name());
 		dto.setApaarNo(academic.getApaar_no());
 		dto.setAppSaleDate(academic.getApp_sale_date());
+		dto.setProReceiptNo(academic.getPro_receipt_no());
 		dto.setHallTicketNo(academic.getHt_no());
 		dto.setScoreMarks(academic.getScore_marks());
 		dto.setPreSchoolName(academic.getPre_school_name());

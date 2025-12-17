@@ -830,6 +830,11 @@ public class StudentAdmissionService {
 		            if (paymentDTO.getOrganisationId() != null) {
 		                transaction.setOrg_id(paymentDTO.getOrganisationId());
 		            }
+		            
+		            if (paymentDTO.getCity() != null) {
+		                transaction.setBankCityName(paymentDTO.getCity());
+		            }
+		         
 		         
 		            // Set Bank Name directly from DTO String
 		            if (paymentDTO.getBank() != null) {
@@ -840,13 +845,18 @@ public class StudentAdmissionService {
 		            if (paymentDTO.getBranch() != null) {
 		                transaction.setBankBranch(paymentDTO.getBranch());
 		            }
+		            
+		            transaction.setIfsc_code(paymentDTO.getIfscCode());
 		            // DD Number and Date (Common logic usually handles transactionNumber/Date, 
 		            // but if it's specific to this block, ensure you map them here too)
 		         
 		        } else if (paymentModeId == CHEQUE_PAYMENT_ID) {
 		            // --- Set Cheque-Specific Fields ---
 		            transaction.setIfsc_code(paymentDTO.getIfscCode());
-		         
+		            if (paymentDTO.getOrganisationId() != null) {
+		                transaction.setOrg_id(paymentDTO.getOrganisationId());
+		            }
+		            
 		            // Set City Name directly from DTO String
 		            if (paymentDTO.getCity() != null) {
 		                transaction.setBankCityName(paymentDTO.getCity());
