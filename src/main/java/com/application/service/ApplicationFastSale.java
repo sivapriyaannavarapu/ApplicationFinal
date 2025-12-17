@@ -270,8 +270,7 @@ public class ApplicationFastSale {
 			orientationRepository.findById(formData.getOrientationId()).ifPresent(orientationDetails::setOrientation);
 		}
 		if (formData.getClassId() != null && formData.getClassId() > 0) {
-		    classRepository.findById(formData.getClassId())
-		            .ifPresent(orientationDetails::setStudentClass);
+			classRepository.findById(formData.getClassId()).ifPresent(orientationDetails::setStudentClass);
 		}
 		orientationDetailsRepository.save(orientationDetails);
 
@@ -361,15 +360,14 @@ public class ApplicationFastSale {
 				if (paymentDTO.getOrganisationId() != null)
 					transaction.setOrg_id(paymentDTO.getOrganisationId());
 				if (paymentDTO.getBank() != null) {
-			        transaction.setBankName(paymentDTO.getBank());
-			    }
-				  if (paymentDTO.getBranch() != null) {
-				        transaction.setBankBranch(paymentDTO.getBranch());
-				    }
-				  if (paymentDTO.getCity() != null) {
-					    transaction.setBankCityName(paymentDTO.getCity());
-					}
-
+					transaction.setBankName(paymentDTO.getBank());
+				}
+				if (paymentDTO.getBranch() != null) {
+					transaction.setBankBranch(paymentDTO.getBranch());
+				}
+				if (paymentDTO.getCity() != null) {
+					transaction.setBankCityName(paymentDTO.getCity());
+				}
 
 				studentApplicationTransactionRepository.save(transaction);
 			}
@@ -600,7 +598,7 @@ public class ApplicationFastSale {
 		// New/Detailed Academic Fields
 		academicDetails.setHt_no(formData.getHallTicketNumber());
 		// Pre Hallticket - set value or null
-	    academicDetails.setPre_hallticket_no(formData.getPreHallTicketNo());
+		academicDetails.setPre_hallticket_no(formData.getPreHallTicketNo());
 		academicDetails.setScore_app_no(formData.getScoreAppNo());
 		if (formData.getScoreMarks() != null) {
 			academicDetails.setScore_marks(formData.getScoreMarks());
@@ -628,20 +626,17 @@ public class ApplicationFastSale {
 		// PREVIOUS COLLEGE DETAILS
 		// -----------------------------
 		academicDetails.setPre_college_name(formData.getPreCollegeName());
-		 
+
 		if (formData.getPreCollegeTypeId() != null && formData.getPreCollegeTypeId() > 0) {
-		     collegeTypeRepo.findById(formData.getPreCollegeTypeId())
-		         .ifPresent(academicDetails::setCollegeType);
+			collegeTypeRepo.findById(formData.getPreCollegeTypeId()).ifPresent(academicDetails::setCollegeType);
 		}
-		 
+
 		if (formData.getPreCollegeStateId() != null && formData.getPreCollegeStateId() > 0) {
-		     stateRepository.findById(formData.getPreCollegeStateId())
-		         .ifPresent(academicDetails::setState2);
+			stateRepository.findById(formData.getPreCollegeStateId()).ifPresent(academicDetails::setState2);
 		}
-		 
+
 		if (formData.getPreCollegeDistrictId() != null && formData.getPreCollegeDistrictId() > 0) {
-		     districtRepository.findById(formData.getPreCollegeDistrictId())
-		         .ifPresent(academicDetails::setDistrict2);
+			districtRepository.findById(formData.getPreCollegeDistrictId()).ifPresent(academicDetails::setDistrict2);
 		}
 		academicDetails.setCreated_by(formData.getCreatedBy());
 		academicDetails.setEmployee(pro);
@@ -771,30 +766,59 @@ public class ApplicationFastSale {
 		}
 
 		// --- 6. Save/Update Siblings (UPSERT LOGIC) ---
-		if (formData.getSiblings() != null && !formData.getSiblings().isEmpty()) {
-			Map<String, Sibling> existingSiblingsMap = siblingRepository
-					.findByStudentAcademicDetails(savedAcademicDetails).stream()
-					.filter(s -> s.getSibling_name() != null)
-					.collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (first, second) -> first));
+if (formData.getSiblings() != null && !formData.getSiblings().isEmpty()) {
 
-			for (SiblingDTO siblingDto : formData.getSiblings()) {
-				Sibling sibling = existingSiblingsMap.get(siblingDto.getFullName());
-				if (sibling == null) {
-					sibling = new Sibling();
-					sibling.setStudentAcademicDetails(savedAcademicDetails);
-					sibling.setCreated_by(siblingDto.getCreatedBy());
-					sibling.setSibling_name(siblingDto.getFullName());
-				}
-				sibling.setSibling_school(siblingDto.getSchoolName());
-				if (siblingDto.getRelationTypeId() != null)
-					relationRepository.findById(siblingDto.getRelationTypeId()).ifPresent(sibling::setStudentRelation);
-				if (siblingDto.getClassId() != null)
-					classRepository.findById(siblingDto.getClassId()).ifPresent(sibling::setStudentClass);
-				if (siblingDto.getGenderId() != null)
-					genderRepository.findById(siblingDto.getGenderId()).ifPresent(sibling::setGender);
-				siblingRepository.save(sibling);
-			}
-		}
+    Map<String, Sibling> existingSiblingsMap = siblingRepository
+            .findByStudentAcademicDetails(savedAcademicDetails).stream()
+            .filter(s -> s.getSibling_name() != null)
+            .collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (first, second) -> first));
+
+    for (SiblingDTO siblingDto : formData.getSiblings()) {
+
+        Sibling sibling = existingSiblingsMap.get(siblingDto.getFullName());
+
+        if (sibling == null) {
+            sibling = new Sibling();
+            sibling.setStudentAcademicDetails(savedAcademicDetails);
+            sibling.setCreated_by(siblingDto.getCreatedBy());
+            sibling.setSibling_name(siblingDto.getFullName());
+        }
+
+        sibling.setSibling_school(siblingDto.getSchoolName());
+
+        // Set relation
+        if (siblingDto.getRelationTypeId() != null) {
+            relationRepository.findById(siblingDto.getRelationTypeId())
+                    .ifPresent(sibling::setStudentRelation);
+        }
+
+        // 🌟 AUTO-ASSIGN GENDER BASED ON RELATION
+        Integer genderId = null;
+
+        if (siblingDto.getRelationTypeId() != null) {
+
+            if (siblingDto.getRelationTypeId() == 3) {        // Brother
+                genderId = 1;  // Male
+            } else if (siblingDto.getRelationTypeId() == 4) { // Sister
+                genderId = 2;  // Female
+            }
+        }
+
+        if (genderId != null) {
+            genderRepository.findById(genderId)
+                    .ifPresent(sibling::setGender);
+        } 
+
+        // Class
+        if (siblingDto.getClassId() != null) {
+            classRepository.findById(siblingDto.getClassId())
+                    .ifPresent(sibling::setStudentClass);
+        }
+
+        siblingRepository.save(sibling);
+    }
+}
+
 
 		// --- 7. Save/Update Concession Details (UPSERT LOGIC) ---
 		if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
@@ -830,25 +854,23 @@ public class ApplicationFastSale {
 				if (concDto.getAuthorizedById() != null)
 					concession.setConc_authorised_by(concDto.getAuthorizedById());
 				concessionRepository.save(concession);
-				
-				 if (concDto.getProConcessionAmount() != null &&
-				            concDto.getProConcessionAmount() > 0) {
 
-				            ProConcession proconc = new ProConcession();
+				if (concDto.getProConcessionAmount() != null && concDto.getProConcessionAmount() > 0) {
 
-				            proconc.setAdm_no(String.valueOf(savedAcademicDetails.getStudAdmsNo()));
-				            proconc.setConc_amount(concDto.getProConcessionAmount());
-				            proconc.setReason(concDto.getProConcessionReason());
-				            proconc.setCreated_by(concDto.getCreatedBy());
-				            proconc.setIs_active(1);
+					ProConcession proconc = new ProConcession();
 
-				            if (concDto.getProConcessionGivenBy() != null) {
-				                employeeRepository.findById(concDto.getProConcessionGivenBy())
-				                        .ifPresent(proconc::setEmployee);
-				            }
+					proconc.setAdm_no(String.valueOf(savedAcademicDetails.getStudAdmsNo()));
+					proconc.setConc_amount(concDto.getProConcessionAmount());
+					proconc.setReason(concDto.getProConcessionReason());
+					proconc.setCreated_by(concDto.getCreatedBy());
+					proconc.setIs_active(1);
 
-				            proConcessionRepository.save(proconc);
-				        }
+					if (concDto.getProConcessionGivenBy() != null) {
+						employeeRepository.findById(concDto.getProConcessionGivenBy()).ifPresent(proconc::setEmployee);
+					}
+
+					proConcessionRepository.save(proconc);
+				}
 
 			}
 		}
@@ -891,18 +913,18 @@ public class ApplicationFastSale {
 				// Transaction location details
 				transaction.setIfsc_code(paymentDTO.getIfscCode());
 				if (paymentDTO.getCity() != null) {
-			        transaction.setBankCityName(paymentDTO.getCity());
-			    }
-			 
-			    // Set Bank Name directly from DTO String
-			    if (paymentDTO.getBank() != null) {
-			        transaction.setBankName(paymentDTO.getBank());
-			    }
-			 
-			    // Set Branch Name directly from DTO String
-			    if (paymentDTO.getBranch() != null) {
-			        transaction.setBankBranch(paymentDTO.getBranch());
-			    }
+					transaction.setBankCityName(paymentDTO.getCity());
+				}
+
+				// Set Bank Name directly from DTO String
+				if (paymentDTO.getBank() != null) {
+					transaction.setBankName(paymentDTO.getBank());
+				}
+
+				// Set Branch Name directly from DTO String
+				if (paymentDTO.getBranch() != null) {
+					transaction.setBankBranch(paymentDTO.getBranch());
+				}
 
 				studentApplicationTransactionRepository.save(transaction);
 			}
@@ -931,6 +953,7 @@ public class ApplicationFastSale {
 		dto.setAppSaleDate(academic.getApp_sale_date());
 		dto.setProReceiptNo(academic.getPro_receipt_no());
 		dto.setHallTicketNo(academic.getHt_no());
+		dto.setScoreAppNo(academic.getScore_app_no());
 		dto.setScoreMarks(academic.getScore_marks());
 		dto.setPreSchoolName(academic.getPre_school_name());
 		// --- Pre-College Details ---
@@ -939,23 +962,22 @@ public class ApplicationFastSale {
 
 		// Pre-college type
 		if (academic.getCollegeType() != null) {
-		    dto.setPreCollegeTypeId(academic.getCollegeType().getBoard_college_type_id());
-		    // If you want name also, uncomment:
-		     dto.setPreCollegeTypeName(academic.getCollegeType().getBoard_college_type());
+			dto.setPreCollegeTypeId(academic.getCollegeType().getBoard_college_type_id());
+			// If you want name also, uncomment:
+			dto.setPreCollegeTypeName(academic.getCollegeType().getBoard_college_type());
 		}
 
 		// Pre-college State
 		if (academic.getState2() != null) {
-		    dto.setPreCollegeStateId(academic.getState2().getStateId());
-		    dto.setPreCollegeStateName(academic.getState2().getStateName());
+			dto.setPreCollegeStateId(academic.getState2().getStateId());
+			dto.setPreCollegeStateName(academic.getState2().getStateName());
 		}
 
 		// Pre-college District
 		if (academic.getDistrict2() != null) {
-		    dto.setPreCollegeDistrictId(academic.getDistrict2().getDistrictId());
-		    dto.setPreCollegeDistrictName(academic.getDistrict2().getDistrictName());
+			dto.setPreCollegeDistrictId(academic.getDistrict2().getDistrictId());
+			dto.setPreCollegeDistrictName(academic.getDistrict2().getDistrictName());
 		}
-
 
 		// ============================================
 		// 1️⃣ FIX: Admission Referred By (String → ID/Name)
@@ -1024,12 +1046,11 @@ public class ApplicationFastSale {
 			dto.setStudyTypeId(academic.getStudyType().getStudy_type_id());
 			dto.setStudyTypeName(academic.getStudyType().getStudy_type_name());
 		}
-		
+
 		if (academic.getCampusSchoolType() != null) {
-		    dto.setSchoolTypeId(academic.getCampusSchoolType().getSchool_type_id());
-		    dto.setSchoolTypeName(academic.getCampusSchoolType().getSchool_type_name());
+			dto.setSchoolTypeId(academic.getCampusSchoolType().getSchool_type_id());
+			dto.setSchoolTypeName(academic.getCampusSchoolType().getSchool_type_name());
 		}
-		
 
 		// Pre-School State & District
 		if (academic.getState() != null) {
@@ -1163,85 +1184,80 @@ public class ApplicationFastSale {
 		});
 
 		// --- Concessions ---
-		concessionRepository.findByStudAdmsId(academic.getStud_adms_id())
-	    .forEach(c -> {
+		concessionRepository.findByStudAdmsId(academic.getStud_adms_id()).forEach(c -> {
 
-	        StudentApplicationSingleDTO.ConcessionItem item =
-	                new StudentApplicationSingleDTO.ConcessionItem();
+			StudentApplicationSingleDTO.ConcessionItem item = new StudentApplicationSingleDTO.ConcessionItem();
 
-	        // Amount + Comments
-	        item.setAmount(c.getConc_amount());
-	        item.setComments(c.getComments());
+			// Amount + Comments
+			item.setAmount(c.getConc_amount());
+			item.setComments(c.getComments());
 
-	        // Type
-	        if (c.getConcessionType() != null) {
-	            item.setConcessionTypeId(c.getConcessionType().getConcTypeId());
-	            item.setConcessionTypeName(c.getConcessionType().getConc_type());
-	        }
+			// Type
+			if (c.getConcessionType() != null) {
+				item.setConcessionTypeId(c.getConcessionType().getConcTypeId());
+				item.setConcessionTypeName(c.getConcessionType().getConc_type());
+			}
 
-	        // Reason
-	        if (c.getConcessionReason() != null) {
-	            item.setReasonId(c.getConcessionReason().getConc_reason_id());
-	            item.setReasonName(c.getConcessionReason().getConc_reason());
-	        }
+			// Reason
+			if (c.getConcessionReason() != null) {
+				item.setReasonId(c.getConcessionReason().getConc_reason_id());
+				item.setReasonName(c.getConcessionReason().getConc_reason());
+			}
 
-	        // Posted By Fields
-	     // Given By
-	        if (c.getConc_issued_by() > 0) {
-	            item.setGivenById(c.getConc_issued_by());
-	            employeeRepository.findById(c.getConc_issued_by()).ifPresent(emp -> {
-	                item.setGivenByName(emp.getFirst_name() +
-	                   (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
-	            });
-	        }
+			// Posted By Fields
+			// Given By
+			if (c.getConc_issued_by() > 0) {
+				item.setGivenById(c.getConc_issued_by());
+				employeeRepository.findById(c.getConc_issued_by()).ifPresent(emp -> {
+					item.setGivenByName(
+							emp.getFirst_name() + (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
+				});
+			}
 
-	        // Authorized By
-	        if (c.getConc_authorised_by() > 0) {
-	            item.setAuthorizedById(c.getConc_authorised_by());
-	            employeeRepository.findById(c.getConc_authorised_by()).ifPresent(emp -> {
-	                item.setAuthorizedByName(emp.getFirst_name() +
-	                   (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
-	            });
-	        }
+			// Authorized By
+			if (c.getConc_authorised_by() > 0) {
+				item.setAuthorizedById(c.getConc_authorised_by());
+				employeeRepository.findById(c.getConc_authorised_by()).ifPresent(emp -> {
+					item.setAuthorizedByName(
+							emp.getFirst_name() + (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
+				});
+			}
 
-	        // Referred By
-	        if (c.getConc_referred_by() > 0) {
-	            item.setConcReferedBy(c.getConc_referred_by());
-	            employeeRepository.findById(c.getConc_referred_by()).ifPresent(emp -> {
-	                item.setConcReferedByName(emp.getFirst_name() +
-	                   (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
-	            });
-	        }
+			// Referred By
+			if (c.getConc_referred_by() > 0) {
+				item.setConcReferedBy(c.getConc_referred_by());
+				employeeRepository.findById(c.getConc_referred_by()).ifPresent(emp -> {
+					item.setConcReferedByName(
+							emp.getFirst_name() + (emp.getLast_name() != null ? " " + emp.getLast_name() : ""));
+				});
+			}
 
+			dto.getConcessions().add(item);
+		});
 
-	        dto.getConcessions().add(item);
-	    });
-		
-		List<ProConcession> proConcs = proConcessionRepository
-		        .findByAdmNo(String.valueOf(academic.getStudAdmsNo()));
+		List<ProConcession> proConcs = proConcessionRepository.findByAdmNo(String.valueOf(academic.getStudAdmsNo()));
 
 		for (ProConcession pc : proConcs) {
 
-		    StudentApplicationSingleDTO.ConcessionItem item =
-		            new StudentApplicationSingleDTO.ConcessionItem();
+			StudentApplicationSingleDTO.ConcessionItem item = new StudentApplicationSingleDTO.ConcessionItem();
 
-		    // PRO amount
-		    item.setProAmount(pc.getConc_amount() != null ? pc.getConc_amount().floatValue() : null);
+			// PRO amount
+			item.setProAmount(pc.getConc_amount() != null ? pc.getConc_amount().floatValue() : null);
 
-		    // PRO reason (free text)
-		    item.setProReason(pc.getReason());
+			// PRO reason (free text)
+			item.setProReason(pc.getReason());
 
-		    // Given By (Employee)
-		    if (pc.getEmployee() != null) {
-		        item.setProGivenById(pc.getEmployee().getEmp_id());
+			// Given By (Employee)
+			if (pc.getEmployee() != null) {
+				item.setProGivenById(pc.getEmployee().getEmp_id());
 
-		        String fullName = pc.getEmployee().getFirst_name()
-		                + (pc.getEmployee().getLast_name() != null ? " " + pc.getEmployee().getLast_name() : "");
+				String fullName = pc.getEmployee().getFirst_name()
+						+ (pc.getEmployee().getLast_name() != null ? " " + pc.getEmployee().getLast_name() : "");
 
-		        item.setProGivenByName(fullName);
-		    }
+				item.setProGivenByName(fullName);
+			}
 
-		    dto.getConcessions().add(item);
+			dto.getConcessions().add(item);
 		}
 
 		return dto;
@@ -1347,28 +1363,29 @@ public class ApplicationFastSale {
 		if (formData.getBranchId() != null && formData.getBranchId() > 0) {
 			campusRepository.findById(formData.getBranchId()).ifPresent(academicDetails::setCampus);
 		}
-		
+
 		if (formData.getPreCollegeName() != null) {
-		    academicDetails.setPre_college_name(formData.getPreCollegeName());
+			academicDetails.setPre_college_name(formData.getPreCollegeName());
 		}
 
 		if (formData.getPreCollegeTypeId() != null && formData.getPreCollegeTypeId() > 0) {
-		    collegeTypeRepo.findById(formData.getPreCollegeTypeId())
-		            .ifPresent(academicDetails::setCollegeType);
+			collegeTypeRepo.findById(formData.getPreCollegeTypeId()).ifPresent(academicDetails::setCollegeType);
 		}
 
 		if (formData.getPreCollegeStateId() != null && formData.getPreCollegeStateId() > 0) {
-		    stateRepository.findById(formData.getPreCollegeStateId())
-		            .ifPresent(academicDetails::setState2);   // mapped to pre_college_state_id
+			stateRepository.findById(formData.getPreCollegeStateId()).ifPresent(academicDetails::setState2); // mapped
+																												// to
+																												// pre_college_state_id
 		}
 
 		if (formData.getPreCollegeDistrictId() != null && formData.getPreCollegeDistrictId() > 0) {
-		    districtRepository.findById(formData.getPreCollegeDistrictId())
-		            .ifPresent(academicDetails::setDistrict2); // mapped to pre_college_district_id
+			districtRepository.findById(formData.getPreCollegeDistrictId()).ifPresent(academicDetails::setDistrict2); // mapped
+																														// to
+																														// pre_college_district_id
 		}
 
 		if (formData.getPreHallTicketNo() != null) {
-		    academicDetails.setPre_hallticket_no(formData.getPreHallTicketNo());
+			academicDetails.setPre_hallticket_no(formData.getPreHallTicketNo());
 		}
 
 		StudentAcademicDetails updatedAcademicDetails = studentAcademicDetailsRepository.save(academicDetails);
@@ -1413,8 +1430,7 @@ public class ApplicationFastSale {
 			orientationRepository.findById(formData.getOrientationId()).ifPresent(orientationDetails::setOrientation);
 		}
 		if (formData.getClassId() != null && formData.getClassId() > 0) {
-		    classRepository.findById(formData.getClassId())
-		            .ifPresent(orientationDetails::setStudentClass);
+			classRepository.findById(formData.getClassId()).ifPresent(orientationDetails::setStudentClass);
 		}
 		orientationDetailsRepository.save(orientationDetails);
 
@@ -1519,33 +1535,68 @@ public class ApplicationFastSale {
 		// ==============================================================
 		// 6. UPDATE SIBLINGS
 		// ==============================================================
-		if (formData.getSiblings() != null) {
-			Map<String, Sibling> existing = siblingRepository.findByStudentAcademicDetails(updatedAcademicDetails)
-					.stream().filter(s -> s.getSibling_name() != null)
-					.collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (a, b) -> a));
+if (formData.getSiblings() != null) {
 
-			for (SiblingDTO s : formData.getSiblings()) {
-				Sibling sib = existing.getOrDefault(s.getFullName(), new Sibling());
-				sib.setStudentAcademicDetails(updatedAcademicDetails);
+    Map<String, Sibling> existing = siblingRepository
+            .findByStudentAcademicDetails(updatedAcademicDetails)
+            .stream()
+            .filter(s -> s.getSibling_name() != null)
+            .collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (a, b) -> a));
 
-				if (s.getFullName() != null)
-					sib.setSibling_name(s.getFullName());
-				if (s.getSchoolName() != null)
-					sib.setSibling_school(s.getSchoolName());
-				if (s.getRelationTypeId() != null && s.getRelationTypeId() > 0)
-					relationRepository.findById(s.getRelationTypeId()).ifPresent(sib::setStudentRelation);
-				if (s.getClassId() != null && s.getClassId() > 0)
-					classRepository.findById(s.getClassId()).ifPresent(sib::setStudentClass);
-				if (s.getGenderId() != null && s.getGenderId() > 0)
-					genderRepository.findById(s.getGenderId()).ifPresent(sib::setGender);
+    for (SiblingDTO s : formData.getSiblings()) {
 
-				if (sib.getCreated_by() == 0 && s.getCreatedBy() != null) {
-					sib.setCreated_by(s.getCreatedBy());
-				}
+        Sibling sib = existing.getOrDefault(s.getFullName(), new Sibling());
+        sib.setStudentAcademicDetails(updatedAcademicDetails);
 
-				siblingRepository.save(sib);
-			}
-		}
+        // Full name
+        if (s.getFullName() != null) {
+            sib.setSibling_name(s.getFullName());
+        }
+
+        // School name
+        if (s.getSchoolName() != null) {
+            sib.setSibling_school(s.getSchoolName());
+        }
+
+        // Relation Type
+        if (s.getRelationTypeId() != null && s.getRelationTypeId() > 0) {
+            relationRepository.findById(s.getRelationTypeId())
+                    .ifPresent(sib::setStudentRelation);
+        }
+
+        // Class
+        if (s.getClassId() != null && s.getClassId() > 0) {
+            classRepository.findById(s.getClassId())
+                    .ifPresent(sib::setStudentClass);
+        }
+
+        // 🌟 AUTO GENDER ASSIGNMENT BASED ON RELATION
+        Integer autoGenderId = null;
+
+        if (s.getRelationTypeId() != null) {
+
+            if (s.getRelationTypeId() == 3) {    // Brother
+                autoGenderId = 1;  // Male
+            } 
+            else if (s.getRelationTypeId() == 4) { // Sister
+                autoGenderId = 2;  // Female
+            }
+        }
+
+        if (autoGenderId != null) {
+            genderRepository.findById(autoGenderId)
+                    .ifPresent(sib::setGender);
+        }
+
+        // CreatedBy (only on new row)
+        if (sib.getCreated_by() == 0 && s.getCreatedBy() != null) {
+            sib.setCreated_by(s.getCreatedBy());
+        }
+
+        siblingRepository.save(sib);
+    }
+}
+
 
 		// ==============================================================
 		// 7. UPDATE CONCESSIONS
@@ -1583,44 +1634,40 @@ public class ApplicationFastSale {
 				concessionRepository.save(conc);
 			}
 		}
-		
+
 		if (formData.getConcessions() != null) {
+			String admNo = String.valueOf(updatedAcademicDetails.getStudAdmsNo());
 
-		    String admNo = String.valueOf(updatedAcademicDetails.getStudAdmsNo());
+			// 1. Fetch the existing active PRO concession
+			Optional<ProConcession> existingProOpt = proConcessionRepository.findByAdmNo(admNo).stream()
+					.filter(pc -> pc.getIs_active() == 1).findFirst();
 
-		    // Fetch existing PRO concessions
-		    List<ProConcession> existingPro = proConcessionRepository.findByAdmNo(admNo);
+			for (ConcessionConfirmationDTO c : formData.getConcessions()) {
+				if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
 
-		    // Mark old rows inactive
-		    for (ProConcession pc : existingPro) {
-		        pc.setIs_active(0);
-		        proConcessionRepository.save(pc);
-		    }
+					// 2. Use the existing record from the DB if it exists
+					ProConcession pc = existingProOpt.orElse(new ProConcession());
 
-		    // Insert new PRO concession from request
-		    for (ConcessionConfirmationDTO c : formData.getConcessions()) {
+					pc.setAdm_no(admNo);
+					pc.setConc_amount(c.getProConcessionAmount());
+					pc.setReason(c.getProConcessionReason());
+					pc.setIs_active(1);
 
-		        if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
+					// 3. FIXED: Avoid the "int == null" error by checking against 0
+					// If the ID is 0, it's a new record. If it's > 0, it's an update.
+					if (pc.getPro_conc_id() == 0) {
+						pc.setCreated_by(c.getCreatedBy() != null ? c.getCreatedBy() : 0);
+					}
 
-		            ProConcession pc = new ProConcession();
+					if (c.getProConcessionGivenBy() != null) {
+						employeeRepository.findById(c.getProConcessionGivenBy()).ifPresent(pc::setEmployee);
+					}
 
-		            pc.setAdm_no(admNo);
-		            pc.setConc_amount(c.getProConcessionAmount());
-		            pc.setReason(c.getProConcessionReason());
-		            pc.setCreated_by(c.getCreatedBy() != null ? c.getCreatedBy() : 0);
-		            pc.setIs_active(1);
-
-		            // Set employee if exists
-		            if (c.getProConcessionGivenBy() != null) {
-		                employeeRepository.findById(c.getProConcessionGivenBy())
-		                        .ifPresent(pc::setEmployee);
-		            }
-
-		            proConcessionRepository.save(pc);
-		        }
-		    }
+					// 4. Hibernate will see the ID > 0 and perform an UPDATE instead of INSERT
+					proConcessionRepository.save(pc);
+				}
+			}
 		}
-
 		// ==============================================================
 		// 8. UPDATE ADDRESS
 		// ==============================================================
@@ -1700,113 +1747,104 @@ public class ApplicationFastSale {
 
 		// 3. Save/Update Concession Details (Concession logic remains the same)
 
-if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
+		if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
 
-    Map<Integer, StudentConcessionType> existingConcessionsMap =
-            concessionRepository.findByStudAdmsId(savedAcademicDetails.getStud_adms_id())
-                    .stream()
-                    .filter(c -> c.getConcessionType() != null)
-                    .collect(Collectors.toMap(
-                            c -> c.getConcessionType().getConcTypeId(),
-                            Function.identity(),
-                            (first, second) -> first
-                    ));
+			Map<Integer, StudentConcessionType> existingConcessionsMap = concessionRepository
+					.findByStudAdmsId(savedAcademicDetails.getStud_adms_id()).stream()
+					.filter(c -> c.getConcessionType() != null).collect(Collectors.toMap(
+							c -> c.getConcessionType().getConcTypeId(), Function.identity(), (first, second) -> first));
 
-    AcademicYear currentYear = savedAcademicDetails.getAcademicYear();
+			AcademicYear currentYear = savedAcademicDetails.getAcademicYear();
 
-    if (currentYear == null) {
-        if (formData.getAcademicYearId() == null) {
-            throw new IllegalArgumentException("Academic Year must be provided when no existing year is found.");
-        }
-        currentYear = academicYearRepository.findById(formData.getAcademicYearId())
-                .orElseThrow(() -> new EntityNotFoundException("Academic Year not found"));
-    }
+			if (currentYear == null) {
+				if (formData.getAcademicYearId() == null) {
+					throw new IllegalArgumentException(
+							"Academic Year must be provided when no existing year is found.");
+				}
+				currentYear = academicYearRepository.findById(formData.getAcademicYearId())
+						.orElseThrow(() -> new EntityNotFoundException("Academic Year not found"));
+			}
 
-    // ======================================================
-    // ✅ 1. SAVE / UPDATE REGULAR CONCESSIONS
-    // ======================================================
-    for (ConcessionConfirmationDTO concDto : formData.getConcessions()) {
+			// ======================================================
+			// ✅ 1. SAVE / UPDATE REGULAR CONCESSIONS
+			// ======================================================
+			for (ConcessionConfirmationDTO concDto : formData.getConcessions()) {
 
-        if (concDto.getConcessionTypeId() == null || concDto.getConcessionTypeId() == 0) {
-            continue; // Skip PRO-only items
-        }
+				if (concDto.getConcessionTypeId() == null || concDto.getConcessionTypeId() == 0) {
+					continue; // Skip PRO-only items
+				}
 
-        StudentConcessionType concession = existingConcessionsMap.get(concDto.getConcessionTypeId());
+				StudentConcessionType concession = existingConcessionsMap.get(concDto.getConcessionTypeId());
 
-        if (concession == null) {
-            concession = new StudentConcessionType();
-            concession.setStudAdmsId(savedAcademicDetails.getStud_adms_id());
-            concession.setAcademicYear(currentYear);
-            concession.setCreated_by(concDto.getCreatedBy());
-            concession.setCreated_Date(LocalDateTime.now());
+				if (concession == null) {
+					concession = new StudentConcessionType();
+					concession.setStudAdmsId(savedAcademicDetails.getStud_adms_id());
+					concession.setAcademicYear(currentYear);
+					concession.setCreated_by(concDto.getCreatedBy());
+					concession.setCreated_Date(LocalDateTime.now());
 
-            concessionTypeRepository.findById(concDto.getConcessionTypeId())
-                    .ifPresent(concession::setConcessionType);
-        }
+					concessionTypeRepository.findById(concDto.getConcessionTypeId())
+							.ifPresent(concession::setConcessionType);
+				}
 
-        concession.setConc_amount(concDto.getConcessionAmount());
-        concession.setComments(concDto.getComments());
+				concession.setConc_amount(concDto.getConcessionAmount());
+				concession.setComments(concDto.getComments());
 
-        if (concDto.getReasonId() != null) {
-            concessionReasonRepository.findById(concDto.getReasonId())
-                    .ifPresent(concession::setConcessionReason);
-        }
+				if (concDto.getReasonId() != null) {
+					concessionReasonRepository.findById(concDto.getReasonId())
+							.ifPresent(concession::setConcessionReason);
+				}
 
-        concession.setConc_referred_by(concDto.getConcReferedBy());
-        concession.setConc_issued_by(concDto.getGivenById());
-        concession.setConc_authorised_by(concDto.getAuthorizedById());
+				concession.setConc_referred_by(concDto.getConcReferedBy());
+				concession.setConc_issued_by(concDto.getGivenById());
+				concession.setConc_authorised_by(concDto.getAuthorizedById());
 
-        concessionRepository.save(concession);
-    }
+				concessionRepository.save(concession);
+			}
 
-    // ======================================================
-    // ✅ 2. SAVE / UPDATE PRO CONCESSIONS (RUN ONCE)
-    // ======================================================
-    String admNo = String.valueOf(savedAcademicDetails.getStudAdmsNo());
+			// ======================================================
+			// ✅ 2. SAVE / UPDATE PRO CONCESSIONS (RUN ONCE)
+			// ======================================================
+			String admNo = String.valueOf(savedAcademicDetails.getStudAdmsNo());
 
- // Fetch existing ACTIVE PRO concession
- ProConcession activePro = proConcessionRepository.findByAdmNo(admNo)
-         .stream()
-         .filter(pc -> pc.getIs_active() == 1)
-         .findFirst()
-         .orElse(null);
+			// Fetch existing ACTIVE PRO concession
+			ProConcession activePro = proConcessionRepository.findByAdmNo(admNo).stream()
+					.filter(pc -> pc.getIs_active() == 1).findFirst().orElse(null);
 
- for (ConcessionConfirmationDTO c : formData.getConcessions()) {
+			for (ConcessionConfirmationDTO c : formData.getConcessions()) {
 
-     if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
+				if (c.getProConcessionAmount() != null && c.getProConcessionAmount() > 0) {
 
-         // CASE 1: Existing PRO found → UPDATE IT
-         if (activePro != null) {
-             activePro.setConc_amount(c.getProConcessionAmount());
-             activePro.setReason(c.getProConcessionReason());
-             activePro.setCreated_by(c.getCreatedBy());
+					// CASE 1: Existing PRO found → UPDATE IT
+					if (activePro != null) {
+						activePro.setConc_amount(c.getProConcessionAmount());
+						activePro.setReason(c.getProConcessionReason());
+						activePro.setCreated_by(c.getCreatedBy());
 
-             if (c.getProConcessionGivenBy() != null) {
-                 employeeRepository.findById(c.getProConcessionGivenBy())
-                         .ifPresent(activePro::setEmployee);
-             }
+						if (c.getProConcessionGivenBy() != null) {
+							employeeRepository.findById(c.getProConcessionGivenBy()).ifPresent(activePro::setEmployee);
+						}
 
-             proConcessionRepository.save(activePro);
-         }
-         // CASE 2: No PRO exists → CREATE NEW
-         else {
-             ProConcession pc = new ProConcession();
-             pc.setAdm_no(admNo);
-             pc.setConc_amount(c.getProConcessionAmount());
-             pc.setReason(c.getProConcessionReason());
-             pc.setCreated_by(c.getCreatedBy());
-             pc.setIs_active(1);
+						proConcessionRepository.save(activePro);
+					}
+					// CASE 2: No PRO exists → CREATE NEW
+					else {
+						ProConcession pc = new ProConcession();
+						pc.setAdm_no(admNo);
+						pc.setConc_amount(c.getProConcessionAmount());
+						pc.setReason(c.getProConcessionReason());
+						pc.setCreated_by(c.getCreatedBy());
+						pc.setIs_active(1);
 
-             if (c.getProConcessionGivenBy() != null) {
-                 employeeRepository.findById(c.getProConcessionGivenBy())
-                         .ifPresent(pc::setEmployee);
-             }
+						if (c.getProConcessionGivenBy() != null) {
+							employeeRepository.findById(c.getProConcessionGivenBy()).ifPresent(pc::setEmployee);
+						}
 
-             proConcessionRepository.save(pc);
-         }
-     }
- }
-}
+						proConcessionRepository.save(pc);
+					}
+				}
+			}
+		}
 
 		PaymentDetailsDTO paymentDTO = formData.getPaymentDetails();
 
@@ -1855,18 +1893,18 @@ if (formData.getConcessions() != null && !formData.getConcessions().isEmpty()) {
 				// DD / Cheque extra fields
 				transaction.setIfsc_code(paymentDTO.getIfscCode());
 				if (paymentDTO.getCity() != null) {
-			        transaction.setBankCityName(paymentDTO.getCity());
-			    }
-			 
-			    // Set Bank Name directly from DTO String
-			    if (paymentDTO.getBank() != null) {
-			        transaction.setBankName(paymentDTO.getBank());
-			    }
-			 
-			    // Set Branch Name directly from DTO String
-			    if (paymentDTO.getBranch() != null) {
-			        transaction.setBankBranch(paymentDTO.getBranch());
-			    }
+					transaction.setBankCityName(paymentDTO.getCity());
+				}
+
+				// Set Bank Name directly from DTO String
+				if (paymentDTO.getBank() != null) {
+					transaction.setBankName(paymentDTO.getBank());
+				}
+
+				// Set Branch Name directly from DTO String
+				if (paymentDTO.getBranch() != null) {
+					transaction.setBankBranch(paymentDTO.getBranch());
+				}
 
 				// 💾 SAVE NEW Transaction
 				studentApplicationTransactionRepository.save(transaction);

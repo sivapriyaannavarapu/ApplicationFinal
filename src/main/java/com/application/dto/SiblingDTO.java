@@ -12,6 +12,5 @@ public class SiblingDTO {
     private String schoolName;
     private Integer classId;
     private Integer relationTypeId;
-    private Integer genderId;
     private Integer createdBy;
 }

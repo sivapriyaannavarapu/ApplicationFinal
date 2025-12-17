@@ -25,6 +25,7 @@ public class StudentApplicationSingleDTO {
     private String hallTicketNo;
     private Integer scoreMarks;
     private Integer proReceiptNo;
+    private String scoreAppNo;
     
     // Lookups (ID & Name flattened)
     private Integer academicYearId;

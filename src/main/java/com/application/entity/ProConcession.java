@@ -20,7 +20,7 @@ public class ProConcession {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int pro_conc_id;
+	private Integer pro_conc_id;
 	private String adm_no;
 	private String reason;
 	private Integer conc_amount;

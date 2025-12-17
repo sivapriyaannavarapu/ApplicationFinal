@@ -418,45 +418,54 @@ public class ApplicationNewConfirmationService {
         // WARNING: This logic is not perfect. If you change a sibling's name in the
         // form, this code will create a NEW sibling instead of updating the old one.
         // This is the best we can do without DELETE permission.
-        if (dto.getSiblings() != null && !dto.getSiblings().isEmpty()) {
-            
-            // --- NO DELETE ---
-            // siblingRepo.deleteAll(siblingRepo.findByStudentAcademicDetails(student));
-            
-            // 1. Fetch existing siblings and put them in a Map by Full Name
-            // This is a fragile key, but it's the only one we have.
-            Map<String, Sibling> existingSiblingsMap = siblingRepo.findByStudentAcademicDetails(student)
-                .stream()
-                .filter(s -> s.getSibling_name() != null)
-                .collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (first, second) -> first)); // Handle duplicates
- 
-            for (SiblingDTO siblingDto : dto.getSiblings()) {
-                
-                // 2. Check if a sibling with this name already exists
-                Sibling sibling = existingSiblingsMap.get(siblingDto.getFullName());
-                
-                if (sibling == null) {
-                    // 3. IF NOT: Create a new Sibling
-                    sibling = new Sibling();
-                    sibling.setStudentAcademicDetails(student);
-                    sibling.setCreated_by(siblingDto.getCreatedBy());
-                    sibling.setSibling_name(siblingDto.getFullName());
-                }
-                
-                // 4. Update all fields
-                sibling.setSibling_school(siblingDto.getSchoolName());
-                if (siblingDto.getRelationTypeId() != null) {
-                    relationRepo.findById(siblingDto.getRelationTypeId()).ifPresent(sibling::setStudentRelation);
-                }
-                if (siblingDto.getClassId() != null) {
-                    classRepo.findById(siblingDto.getClassId()).ifPresent(sibling::setStudentClass);
-                }
-                if (siblingDto.getGenderId() != null) {
-                    genderRepo.findById(siblingDto.getGenderId()).ifPresent(sibling::setGender);
-                }
-                siblingRepo.save(sibling);
-            }
+if (dto.getSiblings() != null && !dto.getSiblings().isEmpty()) {
+
+    Map<String, Sibling> existingSiblingsMap = siblingRepo.findByStudentAcademicDetails(student)
+            .stream()
+            .filter(s -> s.getSibling_name() != null)
+            .collect(Collectors.toMap(Sibling::getSibling_name, Function.identity(), (first, second) -> first));
+
+    for (SiblingDTO siblingDto : dto.getSiblings()) {
+
+        Sibling sibling = existingSiblingsMap.get(siblingDto.getFullName());
+
+        if (sibling == null) {
+            sibling = new Sibling();
+            sibling.setStudentAcademicDetails(student);
+            sibling.setCreated_by(siblingDto.getCreatedBy());
+            sibling.setSibling_name(siblingDto.getFullName());
         }
+
+        // Update basic fields
+        sibling.setSibling_school(siblingDto.getSchoolName());
+
+        if (siblingDto.getRelationTypeId() != null) {
+            relationRepo.findById(siblingDto.getRelationTypeId())
+                    .ifPresent(sibling::setStudentRelation);
+        }
+
+        if (siblingDto.getClassId() != null) {
+            classRepo.findById(siblingDto.getClassId())
+                    .ifPresent(sibling::setStudentClass);
+        }
+
+        // ⭐ AUTO-GENDER ASSIGNMENT (NEW LOGIC)
+        if (siblingDto.getRelationTypeId() != null) {
+
+            if (siblingDto.getRelationTypeId() == 3) {         // Brother
+                genderRepo.findById(1).ifPresent(sibling::setGender); // Male
+            } 
+            else if (siblingDto.getRelationTypeId() == 4) {     // Sister
+                genderRepo.findById(2).ifPresent(sibling::setGender); // Female
+            }
+
+            // If other relation types → do nothing
+        }
+
+        siblingRepo.save(sibling);
+    }
+}
+
         
         // --- 7. Save/Update Concession Details (UPSERT LOGIC) ---
         if (dto.getConcessions() != null && !dto.getConcessions().isEmpty()) {

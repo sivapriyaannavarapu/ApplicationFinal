@@ -2,7 +2,7 @@ package com.application.dto;
  
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+ 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class DistributionGetTableDTO {
  
     private int appDistributionId;
+    private String displaySeries;
     private int appStartNo;
     private int appEndNo;
     private int totalAppCount;
@@ -23,14 +24,17 @@ public class DistributionGetTableDTO {
     private int issued_by_type_id;
     private int issued_to_type_id;
     private int city_id;
+    private String cityname;
     private int state_id;
+    private String statename;
     private int zone_id;
     private int district_id;
+    private String districtname;
     private int cmps_id;
     private LocalDateTime issueDate;
     private int acdc_year_id;
     private int campaignAreaId;
-    private String displaySeries;
+    private Long mobileNmuber;
  
     // Derived fields
     private String issuedToName;

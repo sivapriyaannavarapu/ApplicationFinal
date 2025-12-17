@@ -1,6 +1,6 @@
 package com.application.service;
-import java.util.List;
  
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
  
@@ -11,6 +11,10 @@ import com.application.repository.AdminAppRepository;
 import com.application.repository.CampaignRepository;
 import com.application.repository.DgmRepository;
 import com.application.repository.DistributionRepository;
+import com.application.repository.StateRepository;
+import com.application.repository.DistrictRepository;
+import com.application.repository.CityRepository;
+import com.application.repository.EmployeeRepository; // 🎯 New Import
  
 @Service
 public class DistributionGetTableService {
@@ -27,23 +31,33 @@ public class DistributionGetTableService {
     @Autowired
     private AdminAppRepository adminAppRepository;
     
+    @Autowired
+    StateRepository state;
+    
+    @Autowired
+    DistrictRepository district;
+    
+    @Autowired
+    CityRepository city;
+    
+    @Autowired
+    private EmployeeRepository employeeRepository;
+    
 //    @Cacheable(value = "distributionsByEmployee", key = "#empId")
     public List<DistributionGetTableDTO> getDistributionsByEmployeeAndIssuedToType(int empId, int issuedToTypeId) {
         
-        // Assume ISSUED_TO_PRO_TYPE_ID is a defined constant (e.g., 4)
         final int PRO_ISSUED_TYPE_ID = 4;
         
         List<Distribution> distributions =
                 distributionRepository.findByCreatedByAndIssuedToType(empId, issuedToTypeId);
- 
+       
         return distributions.stream().map(d -> {
             DistributionGetTableDTO dto = new DistributionGetTableDTO();
  
-            // 1. Set displaySeries (Simple Concatenation)
-            // This achieves the same result as the JPQL CONCAT in the BalanceTrackRepository
+            // 1. Set displaySeries
             dto.setDisplaySeries(d.getAppStartNo() + " - " + d.getAppEndNo());
  
-            // 2. Populate all fields from the Distribution entity
+            // 2. Populate all base fields and fetch mobile number
             dto.setAppDistributionId(d.getAppDistributionId());
             dto.setAppStartNo(d.getAppStartNo());
             dto.setAppEndNo(d.getAppEndNo());
@@ -54,44 +68,68 @@ public class DistributionGetTableService {
             dto.setIssued_to_emp_id(d.getIssued_to_emp_id());
             dto.setIssueDate(d.getIssueDate());
             
-            // 3. Handle related IDs from relationships
+            // 🎯 NEW LOGIC: Fetch Mobile Number
+            try {
+                // The repository returns a String, but the DTO field is Long (mobileNmuber)
+                String mobileString = employeeRepository.findMobileNoByEmpId(d.getCreated_by());
+                if (mobileString != null) {
+                     // Parse the String to Long for the DTO (handle typo: mobileNmuber)
+                    dto.setMobileNmuber(Long.parseLong(mobileString));
+                }
+            } catch (Exception e) {
+                // Handle case where mobile number might be invalid or not found
+                System.err.println("Error fetching or parsing mobile number for employee " + d.getCreated_by() + ": " + e.getMessage());
+            }
+ 
+            // 3. Handle related IDs and NAMES from JPA relationships
             int acdcYearId = 0;
             
             if (d.getIssuedByType() != null) dto.setIssued_by_type_id(d.getIssuedByType().getAppIssuedId());
             if (d.getIssuedToType() != null) dto.setIssued_to_type_id(d.getIssuedToType().getAppIssuedId());
-            if (d.getCity() != null) dto.setCity_id(d.getCity().getCityId());
-            if (d.getState() != null) dto.setState_id(d.getState().getStateId());
+            
+            // --- LOCATION IDs and NAMES (FIXED) ---
+            if (d.getState() != null) {
+                dto.setState_id(d.getState().getStateId());
+                dto.setStatename(d.getState().getStateName());
+            }
+            if (d.getDistrict() != null) {
+                dto.setDistrict_id(d.getDistrict().getDistrictId());
+                dto.setDistrictname(d.getDistrict().getDistrictName());
+            }
+            if (d.getCity() != null) {
+                dto.setCity_id(d.getCity().getCityId());
+                dto.setCityname(d.getCity().getCityName());
+            }
+            
             if (d.getZone() != null) dto.setZone_id(d.getZone().getZoneId());
-            if (d.getDistrict() != null) dto.setDistrict_id(d.getDistrict().getDistrictId());
             if (d.getCampus() != null) dto.setCmps_id(d.getCampus().getCampusId());
             if (d.getAcademicYear() != null) {
-                acdcYearId = d.getAcademicYear().getAcdcYearId(); // Store for Master fetch
+                acdcYearId = d.getAcademicYear().getAcdcYearId();
                 dto.setAcdc_year_id(acdcYearId);
             }
             
-            // 4. Master Range Enrichment (Equivalent to logic in getActiveSeriesForReceiver)
+            // 4. Master Range Enrichment
             int masterStart = 0;
             int masterEnd = 0;
             Double amount = d.getAmount() != null ? d.getAmount().doubleValue() : null;
  
             if (acdcYearId > 0 && amount != null) {
-                // FIX: Pass 'amount' directly (it is Double).
                 List<AdminApp> masterRecords = adminAppRepository.findMasterRecordByYearAndAmount(
                         acdcYearId, amount);
  
                 if (!masterRecords.isEmpty()) {
-                    AdminApp master = masterRecords.get(0); // Take the first active record
+                    AdminApp master = masterRecords.get(0);
                     masterStart = master.getAppFromNo();
                     masterEnd = master.getAppToNo();
                 }
             }
             
-            // 5. Set Master Range (These fields MUST be in DistributionGetTableDTO)
-            // dto.setMasterStartNo(masterStart); // Uncomment if added to DTO
-            // dto.setMasterEndNo(masterEnd);     // Uncomment if added to DTO
+            // 5. Set Master Range (Uncomment if fields exist in DTO)
+            // dto.setMasterStartNo(masterStart);
+            // dto.setMasterEndNo(masterEnd);
             
             
-            // 6. Derive the additional fields (Name, Zone, DGM, Campaign)
+            // 6. Derive the additional fields (Names, Zone, DGM, Campaign)
             String issuedToName = null;
             if (d.getIssuedToEmployee() != null) {
                 issuedToName = d.getIssuedToEmployee().getFirst_name() + " " + d.getIssuedToEmployee().getLast_name();
@@ -121,33 +159,13 @@ public class DistributionGetTableService {
             dto.setCampusName(campusName);
  
             String dgmName = null;
-            // Find DGM name based on zone or campus ID from the distribution record
-            if (d.getZone() != null) {
-                // List<Dgm> dgms = dgmRepository.findByZoneId(d.getZone().getZoneId());
-                // if (!dgms.isEmpty() && dgms.get(0).getEmployee() != null) {
-                //     Dgm dgm = dgms.get(0);
-                //     dgmName = dgm.getEmployee().getFirst_name() + " " + dgm.getEmployee().getLast_name();
-                // }
-            } else if (d.getCampus() != null) {
-                // List<Dgm> dgms = dgmRepository.findByCampusId(d.getCampus().getCampusId());
-                // if (!dgms.isEmpty() && dgms.get(0).getEmployee() != null) {
-                //     Dgm dgm = dgms.get(0);
-                //     dgmName = dgm.getEmployee().getFirst_name() + " " + dgm.getEmployee().getLast_name();
-                // }
-            }
+            // ... (DGM repository logic here) ...
             dto.setDgmName(dgmName);
-            
-            // Add logic for campaign area name here
+ 
             String campaignAreaName = null;
             int campaignAreaId = 0;
+            // ... (Campaign repository logic here) ...
             
-            if (d.getCampus() != null) {
-                // Campaign campaign = campaignRepository.findByCampus_CampusId(d.getCampus().getCampusId());
-                // if (campaign != null) {
-                //     campaignAreaName = campaign.getAreaName();
-                //     campaignAreaId = campaign.getCampaignId();
-                // }
-            }
             dto.setCampaignAreaName(campaignAreaName);
             dto.setCampaignAreaId(campaignAreaId);
             
